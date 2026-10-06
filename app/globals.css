@@ -1,26 +1,180 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Manna Cookies & Co. palette — extracted from the Sirrom prototype */
+  --color-cream: #f5efe4;
+  --color-cream-raised: #fbf8f1;
+  --color-cream-sunk: #f2ebdf;
+  --color-tan-soft: #eadcc6;
+  --color-tan-border: #e6dccb;
+  --color-toggle-off: #d9cbb6;
+  --color-gold: #c9a57e;
+  --color-gold-light: #e3cba8;
+  --color-brown: #4a2616;
+  --color-brown-muted: #8a6440;
+  --color-body: #5a4334;
+  --color-muted: #6e5546;
+  --color-muted-2: #8a7466;
+  --color-ink: #24150d;
+  --color-ink-deep: #1b0f09;
+  --color-ink-deepest: #140b06;
+  --color-cream-dark-muted: #d9c8b3;
+  --color-error: #8a3b1e;
+  --color-success-dot: #7a8c4e;
+  --color-neutral-dot: #a8927f;
+
+  --font-display: var(--font-playfair);
+  --font-sans: var(--font-jost);
+
+  --ease-manna: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  --shadow-card-hover: 0 26px 50px -28px rgba(36, 21, 13, 0.55);
+  --shadow-sticky: 0 20px 40px -18px rgba(20, 11, 6, 0.6);
+  --shadow-toast: 0 14px 30px -12px rgba(20, 11, 6, 0.5);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-cream);
+  color: var(--color-body);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* signature letter-spaced uppercase micro-label */
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* dashed ribbon divider from the prototype */
+.ribbon {
+  height: 34px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--color-brown) 0 26px,
+    var(--color-cream) 26px 52px
+  );
+}
+.ribbon-sm {
+  height: 14px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--color-brown) 0 26px,
+    var(--color-cream) 26px 52px
+  );
+}
+
+/* cookie-arch frame */
+.arch {
+  border-radius: 50% 50% 6px 6px / 34% 34% 6px 6px;
+}
+.arch-card {
+  border-radius: 50% 50% 0 0 / 90px 90px 0 0;
+}
+
+@keyframes mannaFadeOut {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+@keyframes mannaScroll {
+  0% {
+    transform: translateY(-100%);
+  }
+  60% {
+    transform: translateY(100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+@keyframes mannaSheet {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes mannaDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes mannaRise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes mannaToast {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 12px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* scroll-reveal system (applied by useReveal hook) */
+[data-reveal] {
+  opacity: 0;
+}
+[data-reveal].revealed {
+  opacity: 1;
+}
+.reveal-up.revealed {
+  animation: mannaRise 0.9s var(--ease-manna) both;
+}
+.reveal-fade.revealed {
+  transition: opacity 1.1s var(--ease-manna);
+}
+.reveal-scale.revealed {
+  animation: reveal-scale-kf 1s var(--ease-manna) both;
+}
+@keyframes reveal-scale-kf {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  [data-reveal],
+  [data-reveal].revealed {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1;
+  }
+}
+
+/* hide number-input spinners on price fields */
+input[type="number"].no-spin::-webkit-outer-spin-button,
+input[type="number"].no-spin::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"].no-spin {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
