@@ -11,7 +11,7 @@ One really good cookie, baked fresh each week. Public ordering site + single-own
 - Public checkout (5-step sheet): package → details → pickup window → Square payment → confirmation with `MC-####` number + calendar download.
 - Capacity is enforced by the `reserve_order` Postgres function with a row lock — overselling is impossible under concurrency. Prices are read server-side; the client never sends an amount.
 - Every paid order creates/updates the **customer in Square** and creates a **Square Order + Payment**; Supabase mirrors it for the dashboard (status pipeline: new → preparing → ready → picked up).
-- Abandoned checkout holds auto-expire after 15 minutes.
+- Abandoned checkout holds auto-expire after 5 minutes; concurrent unpaid holds are capped. Failed/canceled attempts are kept as `canceled` rows for the audit trail.
 - Dashboard (`/dashboard`): Home stats, Orders pipeline, Bake (drop editor), Customers, What's Next — all behind the owner login.
 
 ## Auth & security
@@ -66,5 +66,7 @@ Database changes: add a file under `supabase/migrations/` and run `supabase db p
 
 ## Owner login
 
-Temporary password is in `.owner-temp-password.txt` (gitignored, local only) — sign in and change it via the forgot-password flow, then delete the file.
+Set or change the password via `/forgot-password` (email link → `/auth/confirm` → new password). Policy: 12+ characters with upper/lowercase letters and digits. E2E scripts read the password from the `MC_TEST_PASSWORD` env var.
+
+If a payment ever completes but the order can't be confirmed, the server logs `CRITICAL_UNCONFIRMED_PAYMENT` with the order number and Square payment id — reconcile from the Square dashboard; the hold is intentionally NOT released in that case.
 # manna-cookies-co
