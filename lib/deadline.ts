@@ -1,3 +1,15 @@
+/** America/New_York UTC offset (e.g. "-04:00") for a given calendar date. */
+export function etOffset(dateISO: string): string {
+  const probe = new Date(`${dateISO}T12:00:00Z`);
+  const tzName = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    timeZoneName: "longOffset",
+  })
+    .formatToParts(probe)
+    .find((p) => p.type === "timeZoneName")?.value; // e.g. "GMT-04:00"
+  return tzName?.replace("GMT", "") || "-05:00";
+}
+
 /**
  * Ordering deadline = 2 days before pickup at 8:00 PM Eastern.
  * Returns an ISO timestamptz string for storage.

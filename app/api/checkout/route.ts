@@ -5,6 +5,7 @@ import { squareClient, SQUARE_LOCATION_ID } from "@/lib/square";
 import { allowRequest, clientIp } from "@/lib/ratelimit";
 import { normalizePhone, displayOrderNumber } from "@/lib/format";
 import { PACKAGE_META } from "@/lib/types";
+import { etOffset } from "@/lib/deadline";
 import { SquareError } from "square";
 
 type ReserveResult = {
@@ -196,11 +197,18 @@ export async function POST(req: Request) {
       }
     }
 
-    const { data: dropRow } = await db
-      .from("drops")
-      .select("cookie")
-      .eq("id", input.dropId)
-      .single();
+    const [{ data: dropRow }, { data: winRow }] = await Promise.all([
+      db.from("drops").select("cookie, pickup_date").eq("id", input.dropId).single(),
+      db.from("pickup_windows").select("starts").eq("id", input.windowId).single(),
+    ]);
+
+    // Pickup fulfillment: makes the order visible in the Square dashboard's
+    // Orders view and carries the pickup time into Square's own tooling.
+    const pickupAt =
+      dropRow?.pickup_date && winRow?.starts
+        ? `${dropRow.pickup_date}T${winRow.starts.slice(0, 5)}:00${etOffset(dropRow.pickup_date)}`
+        : undefined;
+
     const orderRes = await square.orders.create({
       idempotencyKey: `order-${input.idempotencyKey}`,
       order: {
@@ -214,6 +222,21 @@ export async function POST(req: Request) {
             basePriceMoney: { amount: BigInt(reserved.price_cents), currency: "USD" },
           },
         ],
+        ...(pickupAt
+          ? {
+              fulfillments: [
+                {
+                  type: "PICKUP",
+                  state: "PROPOSED",
+                  pickupDetails: {
+                    recipient: { displayName: input.name, phoneNumber: phone },
+                    pickupAt,
+                    note: `Order ${orderNumber}`,
+                  },
+                },
+              ],
+            }
+          : {}),
       },
     });
     squareOrderId = orderRes.order?.id;
