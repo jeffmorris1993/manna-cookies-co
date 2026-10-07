@@ -1,59 +1,101 @@
-import type { LiveDropView } from "./types";
-import { PACKAGE_META, PACKAGE_KINDS } from "./types";
+import "server-only";
+import type { LiveDropView, PackageKind } from "./types";
+import { PACKAGE_META } from "./types";
 import { availLine } from "./avail";
-import { deadlineFor, deadlineLabel, longDate, shortDate, windowLabel } from "./format";
+import { deadlineLabel, longDate, shortDate, windowLabel } from "./format";
+import { supabaseAdmin } from "./supabase/admin";
 
-/**
- * Phase 1 placeholder: a hardcoded live drop matching the prototype's d5 seed.
- * Phase 3 replaces the body with a Supabase query — same return shape.
- */
+const COUNTED_STATUSES = ["new", "preparing", "ready", "picked"] as const;
+const PENDING_TTL_MS = 15 * 60 * 1000;
+
+/** Cookies reserved for a drop: confirmed orders + fresh (non-stale) pending holds. */
+export async function reservedCount(dropId: string): Promise<number> {
+  const db = supabaseAdmin();
+  const freshCutoff = new Date(Date.now() - PENDING_TTL_MS).toISOString();
+  const { data, error } = await db
+    .from("orders")
+    .select("cookie_count, status, created_at")
+    .eq("drop_id", dropId)
+    .or(
+      `status.in.(${COUNTED_STATUSES.join(",")}),and(status.eq.pending,created_at.gt.${freshCutoff})`,
+    );
+  if (error) throw new Error(`reservedCount: ${error.message}`);
+  return (data ?? []).reduce((sum, r) => sum + r.cookie_count, 0);
+}
+
+/** The live drop as the public site sees it. Null when no drop is live. */
 export async function getLiveDropView(): Promise<LiveDropView | null> {
-  const pickupDate = "2026-10-10";
-  const capacity = 60;
-  const reserved = 42;
-  const remaining = capacity - reserved;
-  const isOpen = true;
-  const deadline = deadlineFor(pickupDate);
+  const db = supabaseAdmin();
 
-  const packages = PACKAGE_KINDS.map((kind) => {
-    const meta = PACKAGE_META[kind];
-    return {
-      kind,
-      title: meta.title,
-      name: meta.name,
-      sub: meta.sub,
-      count: meta.count,
-      priceCents: meta.defaultPriceCents,
-      available: meta.count <= remaining,
-    };
-  });
+  const { data: drop, error } = await db
+    .from("drops")
+    .select("id, cookie, description, pickup_date, deadline, capacity, is_open")
+    .eq("status", "live")
+    .maybeSingle();
+  if (error) throw new Error(`getLiveDropView drops: ${error.message}`);
+  if (!drop) return null;
 
-  const smallest = Math.min(...packages.map((p) => p.count));
+  const [{ data: pkgRows, error: pkgErr }, { data: winRows, error: winErr }, reserved] =
+    await Promise.all([
+      db
+        .from("drop_packages")
+        .select("kind, enabled, price_cents")
+        .eq("drop_id", drop.id)
+        .eq("enabled", true),
+      db
+        .from("pickup_windows")
+        .select("id, starts, ends, is_full, sort")
+        .eq("drop_id", drop.id)
+        .order("sort"),
+      reservedCount(drop.id),
+    ]);
+  if (pkgErr) throw new Error(`getLiveDropView packages: ${pkgErr.message}`);
+  if (winErr) throw new Error(`getLiveDropView windows: ${winErr.message}`);
+
+  const remaining = Math.max(0, drop.capacity - reserved);
+
+  const kindOrder: PackageKind[] = ["three", "half", "dozen"];
+  const packages = (pkgRows ?? [])
+    .sort((a, b) => kindOrder.indexOf(a.kind) - kindOrder.indexOf(b.kind))
+    .map((p) => {
+      const meta = PACKAGE_META[p.kind as PackageKind];
+      return {
+        kind: p.kind as PackageKind,
+        title: meta.title,
+        name: meta.name,
+        sub: meta.sub,
+        count: meta.count,
+        priceCents: p.price_cents,
+        available: meta.count <= remaining,
+      };
+    });
+
+  const smallest = packages.length ? Math.min(...packages.map((p) => p.count)) : Infinity;
   const soldOut = remaining < smallest;
+  const deadline = new Date(drop.deadline);
   const pastDeadline = Date.now() > deadline.getTime();
-  const orderable = isOpen && !soldOut && !pastDeadline;
+  const orderable = drop.is_open && !soldOut && !pastDeadline;
 
   return {
-    id: "mock-d5",
-    cookie: "Brown Butter Chocolate Chunk",
-    desc: "Brown Butter • Premium Chocolate • Flaky Sea Salt",
-    pickupDateLabel: longDate(pickupDate),
-    pickupShort: shortDate(pickupDate),
+    id: drop.id,
+    cookie: drop.cookie,
+    desc: drop.description,
+    pickupDateLabel: longDate(drop.pickup_date),
+    pickupShort: shortDate(drop.pickup_date),
     deadlineLabel: deadlineLabel(deadline),
-    capacity,
+    capacity: drop.capacity,
     reserved,
     remaining,
-    pct: Math.round((reserved / capacity) * 100),
-    isOpen,
+    pct: Math.min(100, Math.round((reserved / drop.capacity) * 100)),
+    isOpen: drop.is_open,
     soldOut,
     orderable,
-    availLine: availLine(reserved, capacity),
+    availLine: availLine(reserved, drop.capacity),
     packages,
-    windows: [
-      { id: "w1", label: windowLabel("09:00", "11:00"), full: false },
-      { id: "w2", label: windowLabel("11:00", "13:00"), full: true },
-      { id: "w3", label: windowLabel("13:00", "15:00"), full: false },
-      { id: "w4", label: windowLabel("15:00", "17:00"), full: false },
-    ],
+    windows: (winRows ?? []).map((w) => ({
+      id: w.id,
+      label: windowLabel(w.starts.slice(0, 5), w.ends.slice(0, 5)),
+      full: w.is_full,
+    })),
   };
 }
