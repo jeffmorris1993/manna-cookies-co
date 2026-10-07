@@ -61,19 +61,41 @@ export default function OrderSection({
         >
           {drop.cookie}
         </div>
-        <div
-          data-reveal="up"
-          data-delay="180"
-          style={{ marginTop: 10, fontSize: 13, letterSpacing: ".2em", color: "#5A4334" }}
-        >
-          {/* keep each ingredient phrase on one line; break only between them */}
-          {drop.desc.split("•").map((part, i, arr) => (
-            <span key={i}>
-              <span style={{ whiteSpace: "nowrap" }}>{part.trim()}</span>
-              {i < arr.length - 1 && <span> • </span>}
-            </span>
-          ))}
-        </div>
+        {drop.desc.includes("•") ? (
+          // ingredient-list style: keep each phrase on one line, break between them
+          <div
+            data-reveal="up"
+            data-delay="180"
+            style={{ marginTop: 10, fontSize: 13, letterSpacing: ".2em", color: "#5A4334" }}
+          >
+            {drop.desc.split("•").map((part, i, arr) => (
+              <span key={i}>
+                <span style={part.trim().length <= 32 ? { whiteSpace: "nowrap" } : undefined}>
+                  {part.trim()}
+                </span>
+                {i < arr.length - 1 && <span> • </span>}
+              </span>
+            ))}
+          </div>
+        ) : (
+          // free-form description: respect the owner's line breaks, wrap normally
+          <div
+            data-reveal="up"
+            data-delay="180"
+            style={{
+              margin: "12px auto 0",
+              maxWidth: 440,
+              fontSize: 14,
+              letterSpacing: ".08em",
+              lineHeight: 1.7,
+              color: "#5A4334",
+              whiteSpace: "pre-line",
+              textWrap: "pretty",
+            }}
+          >
+            {drop.desc}
+          </div>
+        )}
 
         <div data-reveal="up" data-delay="240" style={{ maxWidth: 520, margin: "40px auto 0" }}>
           <div
@@ -108,7 +130,10 @@ export default function OrderSection({
               style={{
                 marginTop: 56,
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,200px),1fr))",
+                // cards cap at 340px and center, so 1 or 2 enabled packages
+                // don't stretch into billboard-width arches
+                gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,200px),340px))",
+                justifyContent: "center",
                 gap: "clamp(16px,2vw,28px)",
               }}
             >
