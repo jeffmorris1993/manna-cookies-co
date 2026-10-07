@@ -253,6 +253,23 @@ otp_expiry = 3600
 # subject = "You have been invited"
 # content_path = "./supabase/templates/invite.html"
 
+# Branded password-reset email.
+# NOTE: custom templates require a custom SMTP provider (free tier blocks
+# re-templating the built-in sender). Set RESEND_API_KEY in the environment
+# and uncomment [auth.email.smtp] below, then `supabase config push`.
+[auth.email.template.recovery]
+subject = "Reset your Manna Cookies & Co. password"
+content_path = "./supabase/templates/recovery.html"
+
+# [auth.email.smtp]
+# enabled = true
+# host = "smtp.resend.com"
+# port = 465
+# user = "resend"
+# pass = "env(RESEND_API_KEY)"
+# admin_email = "hello@sirromstudios.com"
+# sender_name = "Manna Cookies & Co."
+
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
 # enabled = true
