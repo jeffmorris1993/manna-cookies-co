@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import type { LiveDropView, PackageKind } from "@/lib/types";
 import { formatMoney } from "@/lib/format";
 import WaitlistForm from "./WaitlistForm";
@@ -104,6 +105,39 @@ export default function OrderSection({
             {drop.desc}
           </div>
         ))}
+
+        {showShowcase && drop.photoUrl && (
+          <div data-reveal="scale" style={{ margin: "36px auto 0", width: "min(72vw, 300px)" }}>
+            <div
+              style={{
+                aspectRatio: "1",
+                borderRadius: "50% 50% 6px 6px / 38% 38% 6px 6px",
+                overflow: "hidden",
+                border: "1px solid rgba(74,38,22,.4)",
+                padding: 8,
+                background: "#F5EFE4",
+              }}
+            >
+              <div
+                style={{
+                  position: "relative",
+                  width: "100%",
+                  height: "100%",
+                  overflow: "hidden",
+                  borderRadius: "50% 50% 2px 2px / 36% 36% 2px 2px",
+                }}
+              >
+                <Image
+                  src={drop.photoUrl}
+                  alt={drop.cookie}
+                  fill
+                  sizes="300px"
+                  style={{ objectFit: "cover" }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {showShowcase && (
         <div data-reveal="up" data-delay="240" style={{ maxWidth: 520, margin: "40px auto 0" }}>

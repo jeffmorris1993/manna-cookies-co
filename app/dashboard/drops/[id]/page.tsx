@@ -16,7 +16,7 @@ export default async function DropEditPage({ params }: { params: Promise<{ id: s
 
   const { data: drop } = await supabase
     .from("drops")
-    .select("id, cookie, description, pickup_date, capacity, status, is_open")
+    .select("id, cookie, description, photo_url, pickup_date, capacity, status, is_open")
     .eq("id", id)
     .maybeSingle();
   if (!drop) notFound();
@@ -49,6 +49,7 @@ export default async function DropEditPage({ params }: { params: Promise<{ id: s
         pickupDate: drop.pickup_date,
         capacity: drop.capacity,
         status: drop.status,
+        photoUrl: drop.photo_url,
         isOpen: drop.is_open,
         reserved,
         revenue,

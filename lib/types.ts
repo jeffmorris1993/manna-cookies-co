@@ -50,6 +50,7 @@ export interface LiveDropView {
   id: string;
   cookie: string;
   desc: string;
+  photoUrl: string | null;
   pickupDateISO: string; // "2026-10-10"
   pickupDateLabel: string; // "Saturday, Oct 10"
   pickupShort: string; // "SAT, OCT 10"

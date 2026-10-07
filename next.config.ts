@@ -31,6 +31,20 @@ const csp = [
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
+  images: {
+    remotePatterns: supabaseHost
+      ? [
+          {
+            protocol: "https" as const,
+            hostname: new URL(supabaseHost).hostname,
+            pathname: "/storage/v1/object/public/**",
+          },
+        ]
+      : [],
+  },
+  experimental: {
+    serverActions: { bodySizeLimit: "8mb" },
+  },
   turbopack: {
     rules: {
       "*.css": {

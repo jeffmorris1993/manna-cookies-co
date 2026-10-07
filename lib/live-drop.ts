@@ -29,7 +29,7 @@ export async function getLiveDropView(): Promise<LiveDropView | null> {
 
   const { data: drop, error } = await db
     .from("drops")
-    .select("id, cookie, description, pickup_date, deadline, capacity, is_open")
+    .select("id, cookie, description, photo_url, pickup_date, deadline, capacity, is_open")
     .eq("status", "live")
     .maybeSingle();
   if (error) throw new Error(`getLiveDropView drops: ${error.message}`);
@@ -80,6 +80,7 @@ export async function getLiveDropView(): Promise<LiveDropView | null> {
     id: drop.id,
     cookie: drop.cookie,
     desc: drop.description,
+    photoUrl: drop.photo_url,
     pickupDateISO: drop.pickup_date,
     pickupDateLabel: longDate(drop.pickup_date),
     pickupShort: `PICKUP ${monthDay(drop.pickup_date).toUpperCase()}`,

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOwner } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { deadlineTimestamp } from "@/lib/deadline";
 import { PACKAGE_KINDS, PACKAGE_META } from "@/lib/types";
 
@@ -81,7 +82,7 @@ export async function toggleOpen(dropId: string, open: boolean): Promise<ActionR
 const saveDropSchema = z.object({
   dropId: z.uuid(),
   cookie: z.string().trim().min(1, "Give the cookie a name.").max(120),
-  description: z.string().trim().max(300),
+  description: z.string().trim().max(280, "Keep the description under 280 characters."),
   pickupDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a valid pickup date."),
   capacity: z
     .number()
@@ -333,4 +334,57 @@ export async function createNextDrop(fromDropId: string | null): Promise<ActionR
 
   revalidateDashboard();
   return { ok: true, id: created.id };
+}
+
+/* ---------------- drop photo ---------------- */
+
+const PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const PHOTO_MAX_BYTES = 8 * 1024 * 1024;
+
+export async function uploadDropPhoto(dropId: string, formData: FormData): Promise<ActionResult> {
+  try {
+    await requireOwner();
+  } catch {
+    return fail("Not signed in.");
+  }
+  if (!z.uuid().safeParse(dropId).success) return fail("Invalid request.");
+
+  const file = formData.get("photo");
+  if (!(file instanceof File) || file.size === 0) return fail("Choose a photo first.");
+  if (!PHOTO_TYPES.has(file.type)) return fail("Use a JPEG, PNG, or WebP image.");
+  if (file.size > PHOTO_MAX_BYTES) return fail("Photos must be under 8 MB.");
+
+  const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
+  const path = `drops/${dropId}/${Date.now()}.${ext}`;
+
+  const admin = supabaseAdmin();
+  const { error: upErr } = await admin.storage
+    .from("drop-photos")
+    .upload(path, file, { contentType: file.type, upsert: false });
+  if (upErr) {
+    console.error("drop_photo_upload_error", upErr.message);
+    return fail("Couldn't upload the photo. Please try again.");
+  }
+
+  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/drop-photos/${path}`;
+  const { error } = await admin.from("drops").update({ photo_url: url }).eq("id", dropId);
+  if (error) return fail("Couldn't save the photo.");
+
+  revalidateDashboard();
+  return { ok: true };
+}
+
+export async function removeDropPhoto(dropId: string): Promise<ActionResult> {
+  let supabase;
+  try {
+    ({ supabase } = await requireOwner());
+  } catch {
+    return fail("Not signed in.");
+  }
+  if (!z.uuid().safeParse(dropId).success) return fail("Invalid request.");
+
+  const { error } = await supabase.from("drops").update({ photo_url: null }).eq("id", dropId);
+  if (error) return fail("Couldn't remove the photo.");
+  revalidateDashboard();
+  return { ok: true };
 }

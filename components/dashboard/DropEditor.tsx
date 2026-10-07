@@ -1,9 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { saveDrop, makeLive, createNextDrop } from "@/app/dashboard/actions";
+import {
+  saveDrop,
+  makeLive,
+  createNextDrop,
+  uploadDropPhoto,
+  removeDropPhoto,
+} from "@/app/dashboard/actions";
 import { formatMoney, parseISODate } from "@/lib/format";
 import { PACKAGE_META, type PackageKind } from "@/lib/types";
 import { useToast } from "./Toast";
@@ -12,6 +18,7 @@ type EditorDrop = {
   id: string;
   cookie: string;
   description: string;
+  photoUrl: string | null;
   pickupDate: string;
   capacity: number;
   status: "live" | "scheduled" | "complete";
@@ -19,6 +26,25 @@ type EditorDrop = {
   reserved: number;
   revenue: number;
 };
+
+/** Downscale to ≤1600px JPEG client-side so phone photos upload fast. */
+async function compressImage(file: File): Promise<File> {
+  try {
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+    const w = Math.round(bmp.width * scale);
+    const h = Math.round(bmp.height * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    canvas.getContext("2d")?.drawImage(bmp, 0, 0, w, h);
+    const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.85));
+    if (blob) return new File([blob], "photo.jpg", { type: "image/jpeg" });
+  } catch {
+    /* fall through to the original file */
+  }
+  return file;
+}
 type EditorPkg = { kind: PackageKind; enabled: boolean; priceCents: number };
 type EditorWin = { id: string | null; starts: string; ends: string; full: boolean };
 
@@ -115,6 +141,36 @@ export default function DropEditor({
   const [wins, setWins] = useState<EditorWin[]>(windows);
   const [pkgs, setPkgs] = useState<EditorPkg[]>(packages);
   const [pending, start] = useTransition();
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const onPhotoPicked = async (file: File | undefined) => {
+    if (!file || photoBusy) return;
+    setPhotoBusy(true);
+    try {
+      const compressed = await compressImage(file);
+      const fd = new FormData();
+      fd.append("photo", compressed);
+      const res = await uploadDropPhoto(drop.id, fd);
+      toast(res.ok ? "Photo updated" : (res.error ?? "Couldn't upload the photo"));
+      if (res.ok) router.refresh();
+    } finally {
+      setPhotoBusy(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const onPhotoRemove = async () => {
+    if (photoBusy) return;
+    setPhotoBusy(true);
+    try {
+      const res = await removeDropPhoto(drop.id);
+      toast(res.ok ? "Photo removed" : (res.error ?? "Couldn't remove the photo"));
+      if (res.ok) router.refresh();
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
   const router = useRouter();
   const toast = useToast();
 
@@ -276,12 +332,26 @@ export default function DropEditor({
           className="font-display disabled:opacity-60"
           style={{ ...FIELD_INPUT, marginTop: 8, width: "100%", fontSize: 18 }}
         />
-        <div style={{ marginTop: 16, ...SECTION_LABEL }}>DESCRIPTION</div>
+        <div
+          style={{
+            marginTop: 16,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "baseline",
+            gap: 10,
+          }}
+        >
+          <div style={SECTION_LABEL}>DESCRIPTION</div>
+          <div style={{ fontSize: 11, color: description.length > 260 ? "#8A3B1E" : "#8A7466" }}>
+            {description.length}/280
+          </div>
+        </div>
         <textarea
           value={description}
           disabled={readOnly}
+          maxLength={280}
           onChange={(e) => setDescription(e.target.value)}
-          rows={2}
+          rows={3}
           className="disabled:opacity-60"
           style={{
             marginTop: 8,
@@ -350,6 +420,87 @@ export default function DropEditor({
             >
               +
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* photo */}
+      <div style={{ background: "#FBF8F1", borderRadius: 16, padding: "16px 18px" }}>
+        <div style={SECTION_LABEL}>PHOTO</div>
+        <div style={{ marginTop: 4, fontSize: 13, lineHeight: 1.5, color: "#6E5546" }}>
+          Shown on the website next to this week&apos;s cookie. A close, warm shot works best.
+        </div>
+        <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+          {drop.photoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={drop.photoUrl}
+              alt="This drop's photo"
+              style={{
+                width: 132,
+                height: 132,
+                objectFit: "cover",
+                borderRadius: 12,
+                border: "1px solid rgba(74,38,22,.2)",
+                display: "block",
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 132,
+                height: 132,
+                borderRadius: 12,
+                border: "1px dashed rgba(74,38,22,.35)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 11,
+                letterSpacing: ".14em",
+                color: "#8A7466",
+                textAlign: "center",
+                padding: 10,
+              }}
+            >
+              NO PHOTO YET
+            </div>
+          )}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              style={{ display: "none" }}
+              onChange={(e) => onPhotoPicked(e.target.files?.[0])}
+            />
+            <button
+              disabled={readOnly || photoBusy}
+              onClick={() => fileRef.current?.click()}
+              className="cursor-pointer disabled:opacity-50"
+              style={{
+                height: 46,
+                padding: "0 18px",
+                borderRadius: 12,
+                border: "1px solid #4A2616",
+                background: "transparent",
+                color: "#24150D",
+                fontSize: 11,
+                letterSpacing: ".16em",
+                fontWeight: 600,
+              }}
+            >
+              {photoBusy ? "UPLOADING…" : drop.photoUrl ? "REPLACE PHOTO" : "UPLOAD PHOTO"}
+            </button>
+            {drop.photoUrl && (
+              <button
+                disabled={readOnly || photoBusy}
+                onClick={onPhotoRemove}
+                className="cursor-pointer border-0 bg-transparent disabled:opacity-50"
+                style={{ fontSize: 11, letterSpacing: ".14em", color: "#8A3B1E", padding: "6px 0", textAlign: "left" }}
+              >
+                REMOVE
+              </button>
+            )}
           </div>
         </div>
       </div>
