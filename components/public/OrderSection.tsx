@@ -14,10 +14,10 @@ export default function OrderSection({
   onSelect: (kind: PackageKind) => void;
 }) {
   const unavailable = !drop.orderable;
-  const unavailTitle =
-    !drop.isOpen && !drop.soldOut
-      ? "ORDERS ARE CLOSED FOR THIS WEEK."
-      : "THIS WEEK'S MANNA IS GONE.";
+  // sold out → "gone"; closed by the owner or past the deadline → "closed"
+  const unavailTitle = drop.soldOut
+    ? "THIS WEEK'S MANNA IS GONE."
+    : "ORDERS ARE CLOSED FOR THIS WEEK.";
 
   return (
     <section id="order" data-screen-label="Order" style={{ background: "#FBF8F1" }}>
@@ -66,7 +66,13 @@ export default function OrderSection({
           data-delay="180"
           style={{ marginTop: 10, fontSize: 13, letterSpacing: ".2em", color: "#5A4334" }}
         >
-          {drop.desc}
+          {/* keep each ingredient phrase on one line; break only between them */}
+          {drop.desc.split("•").map((part, i, arr) => (
+            <span key={i}>
+              <span style={{ whiteSpace: "nowrap" }}>{part.trim()}</span>
+              {i < arr.length - 1 && <span> • </span>}
+            </span>
+          ))}
         </div>
 
         <div data-reveal="up" data-delay="240" style={{ maxWidth: 520, margin: "40px auto 0" }}>

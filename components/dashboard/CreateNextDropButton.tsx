@@ -9,8 +9,7 @@ export default function CreateNextDropButton({ fromDropId }: { fromDropId: strin
   const [pending, start] = useTransition();
   const router = useRouter();
   const toast = useToast();
-
-  if (!fromDropId) return null;
+  const first = fromDropId === null;
 
   return (
     <button
@@ -19,7 +18,7 @@ export default function CreateNextDropButton({ fromDropId }: { fromDropId: strin
         start(async () => {
           const res = await createNextDrop(fromDropId);
           if (res.ok && res.id) {
-            toast("Next drop created");
+            toast(first ? "First drop created — set it up, then make it live" : "Next drop created");
             router.push(`/dashboard/drops/${res.id}`);
           } else {
             toast(res.error ?? "Couldn't create drop");
@@ -38,7 +37,7 @@ export default function CreateNextDropButton({ fromDropId }: { fromDropId: strin
         fontWeight: 600,
       }}
     >
-      {pending ? "CREATING…" : "+ CREATE NEXT DROP"}
+      {pending ? "CREATING…" : first ? "+ CREATE YOUR FIRST DROP" : "+ CREATE NEXT DROP"}
     </button>
   );
 }

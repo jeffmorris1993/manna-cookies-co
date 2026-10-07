@@ -122,19 +122,7 @@ export default function Testimonials() {
           </a>
         </div>
 
-        <div
-          style={{
-            marginTop: 48,
-            display: "grid",
-            gridAutoFlow: "column",
-            gridAutoColumns: "minmax(170px,1fr)",
-            gap: "clamp(10px,1.4vw,18px)",
-            overflowX: "auto",
-            scrollSnapType: "x mandatory",
-            paddingBottom: 6,
-            WebkitOverflowScrolling: "touch",
-          }}
-        >
+        <div className="testi-rail">
           <Photo src="/customer.jpg" alt="Customer enjoying a Manna cookie" />
           <Quote
             dark

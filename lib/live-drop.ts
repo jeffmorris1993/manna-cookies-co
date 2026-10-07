@@ -84,6 +84,7 @@ export async function getLiveDropView(): Promise<LiveDropView | null> {
     pickupDateLabel: longDate(drop.pickup_date),
     pickupShort: `PICKUP ${monthDay(drop.pickup_date).toUpperCase()}`,
     deadlineLabel: deadlineLabel(deadline),
+    deadlineAt: deadline.toISOString(),
     capacity: drop.capacity,
     reserved,
     remaining,

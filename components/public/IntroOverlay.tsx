@@ -12,7 +12,7 @@ function markSeen() {
   } catch {}
 }
 
-export default function IntroOverlay({ replayToken = 0 }: { replayToken?: number }) {
+export default function IntroOverlay() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -20,8 +20,7 @@ export default function IntroOverlay({ replayToken = 0 }: { replayToken?: number
     try {
       seen = sessionStorage.getItem(KEY) === "1";
     } catch {}
-    if (replayToken === 0 && seen) return;
-    if (replayToken > 0) window.scrollTo(0, 0);
+    if (seen) return;
     setShow(true);
     // marked seen when the intro ends (not on mount) so StrictMode's
     // double-effect in dev can't strand the overlay
@@ -30,7 +29,7 @@ export default function IntroOverlay({ replayToken = 0 }: { replayToken?: number
       setShow(false);
     }, 2550);
     return () => window.clearTimeout(t);
-  }, [replayToken]);
+  }, []);
 
   if (!show) return null;
 

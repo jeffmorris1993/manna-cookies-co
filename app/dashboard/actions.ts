@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOwner } from "@/lib/auth";
 import { deadlineTimestamp } from "@/lib/deadline";
-import { PACKAGE_KINDS } from "@/lib/types";
+import { PACKAGE_KINDS, PACKAGE_META } from "@/lib/types";
 
 export type ActionResult = { ok: boolean; error?: string; id?: string };
 
@@ -227,41 +227,68 @@ export async function makeLive(dropId: string): Promise<ActionResult> {
   return { ok: true };
 }
 
-/** New scheduled drop one week after the latest, copying packages + windows. */
-export async function createNextDrop(fromDropId: string): Promise<ActionResult> {
+const DEFAULT_WINDOWS = [
+  { starts: "09:00", ends: "11:00" },
+  { starts: "11:00", ends: "13:00" },
+  { starts: "13:00", ends: "15:00" },
+  { starts: "15:00", ends: "17:00" },
+];
+
+/**
+ * New scheduled drop. With a source drop: one week after the latest, copying
+ * its packages + windows. With null (first drop ever): blank cookie, default
+ * prices/windows, next Saturday.
+ */
+export async function createNextDrop(fromDropId: string | null): Promise<ActionResult> {
   let supabase;
   try {
     ({ supabase } = await requireOwner());
   } catch {
     return fail("Not signed in.");
   }
-  if (!z.uuid().safeParse(fromDropId).success) return fail("Invalid request.");
+  if (fromDropId !== null && !z.uuid().safeParse(fromDropId).success) {
+    return fail("Invalid request.");
+  }
 
-  const { data: src } = await supabase
-    .from("drops")
-    .select("cookie, description, capacity")
-    .eq("id", fromDropId)
-    .single();
-  if (!src) return fail("Source drop not found.");
+  let src: { cookie: string; description: string; capacity: number } | null = null;
+  if (fromDropId) {
+    const { data } = await supabase
+      .from("drops")
+      .select("cookie, description, capacity")
+      .eq("id", fromDropId)
+      .single();
+    if (!data) return fail("Source drop not found.");
+    src = data;
+  }
 
   const { data: latest } = await supabase
     .from("drops")
     .select("pickup_date")
     .order("pickup_date", { ascending: false })
     .limit(1)
-    .single();
-  const base = latest ? new Date(`${latest.pickup_date}T12:00:00Z`) : new Date();
-  base.setUTCDate(base.getUTCDate() + 7);
-  const pickup = base.toISOString().slice(0, 10);
+    .maybeSingle();
+
+  let pickup: string;
+  if (latest) {
+    const base = new Date(`${latest.pickup_date}T12:00:00Z`);
+    base.setUTCDate(base.getUTCDate() + 7);
+    pickup = base.toISOString().slice(0, 10);
+  } else {
+    // first drop: next Saturday (at least 3 days out so the deadline is future)
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() + 3);
+    while (d.getUTCDay() !== 6) d.setUTCDate(d.getUTCDate() + 1);
+    pickup = d.toISOString().slice(0, 10);
+  }
 
   const { data: created, error } = await supabase
     .from("drops")
     .insert({
-      cookie: src.cookie,
-      description: src.description,
+      cookie: src?.cookie ?? "",
+      description: src?.description ?? "",
       pickup_date: pickup,
       deadline: deadlineTimestamp(pickup),
-      capacity: src.capacity,
+      capacity: src?.capacity ?? 60,
       status: "scheduled",
       is_open: true,
     })
@@ -269,37 +296,40 @@ export async function createNextDrop(fromDropId: string): Promise<ActionResult> 
     .single();
   if (error || !created) return fail("Couldn't create the next drop.");
 
-  const { data: pkgs } = await supabase
-    .from("drop_packages")
-    .select("kind, enabled, price_cents")
-    .eq("drop_id", fromDropId);
+  const { data: pkgs } = fromDropId
+    ? await supabase
+        .from("drop_packages")
+        .select("kind, enabled, price_cents")
+        .eq("drop_id", fromDropId)
+    : { data: null };
   const pkgRows = PACKAGE_KINDS.map((kind) => {
     const src2 = pkgs?.find((p) => p.kind === kind);
     return {
       drop_id: created.id,
       kind,
       enabled: src2?.enabled ?? true,
-      price_cents: src2?.price_cents ?? 1400,
+      price_cents: src2?.price_cents ?? PACKAGE_META[kind].defaultPriceCents,
     };
   });
   await supabase.from("drop_packages").insert(pkgRows);
 
-  const { data: wins } = await supabase
-    .from("pickup_windows")
-    .select("starts, ends, sort")
-    .eq("drop_id", fromDropId)
-    .order("sort");
-  if (wins?.length) {
-    await supabase.from("pickup_windows").insert(
-      wins.map((w) => ({
-        drop_id: created.id,
-        starts: w.starts,
-        ends: w.ends,
-        is_full: false,
-        sort: w.sort,
-      })),
-    );
-  }
+  const { data: wins } = fromDropId
+    ? await supabase
+        .from("pickup_windows")
+        .select("starts, ends, sort")
+        .eq("drop_id", fromDropId)
+        .order("sort")
+    : { data: null };
+  const winRows = (wins?.length ? wins : DEFAULT_WINDOWS.map((w, i) => ({ ...w, sort: i }))).map(
+    (w) => ({
+      drop_id: created.id,
+      starts: w.starts,
+      ends: w.ends,
+      is_full: false,
+      sort: w.sort,
+    }),
+  );
+  await supabase.from("pickup_windows").insert(winRows);
 
   revalidateDashboard();
   return { ok: true, id: created.id };

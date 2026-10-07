@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireOwner } from "@/lib/auth";
 import TabBar from "@/components/dashboard/TabBar";
 import ToastProvider from "@/components/dashboard/Toast";
+import AutoRefresh from "@/components/dashboard/AutoRefresh";
 import { signOut } from "@/app/login/actions";
 
 export const metadata = { title: "Owner Dashboard · Manna Cookies & Co.", robots: { index: false } };
@@ -78,6 +79,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </header>
         <div style={{ maxWidth: 760, margin: "0 auto", padding: "0 18px" }}>{children}</div>
         <TabBar newOrders={count ?? 0} />
+        <AutoRefresh />
       </div>
     </ToastProvider>
   );

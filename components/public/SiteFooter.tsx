@@ -1,12 +1,11 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 
 export default function SiteFooter({
-  onReplayIntro,
   onOrder,
 }: {
-  onReplayIntro: () => void;
   onOrder: (e?: React.MouseEvent) => void;
 }) {
   return (
@@ -51,6 +50,7 @@ export default function SiteFooter({
           <a href="#order" onClick={onOrder}>
             PICKUP INFO
           </a>
+          <Link href="/privacy">PRIVACY</Link>
         </div>
         <p style={{ margin: "20px 0 0", fontSize: "clamp(12px,3.5vw,14px)", lineHeight: 1.6, color: "#5A4334" }}>
           Pickup by reservation.
@@ -69,13 +69,9 @@ export default function SiteFooter({
         >
           Straight From Heaven.
         </div>
-        <button
-          onClick={onReplayIntro}
-          className="cursor-pointer border-0 bg-transparent"
-          style={{ marginTop: 44, fontSize: 10, letterSpacing: ".24em", color: "#6E5546", padding: 10 }}
-        >
-          EST. 2023 · REPLAY INTRO
-        </button>
+        <span style={{ marginTop: 44, fontSize: 10, letterSpacing: ".24em", color: "#6E5546" }}>
+          EST. 2023
+        </span>
         <span style={{ marginTop: 14, fontSize: 10, letterSpacing: ".24em", color: "#6E5546" }}>
           POWERED BY SIRROM STUDIOS
         </span>

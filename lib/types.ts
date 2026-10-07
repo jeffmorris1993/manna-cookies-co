@@ -54,6 +54,7 @@ export interface LiveDropView {
   pickupDateLabel: string; // "Saturday, Oct 10"
   pickupShort: string; // "SAT, OCT 10"
   deadlineLabel: string; // "Thursday, Oct 8 · 8:00 PM"
+  deadlineAt: string; // ISO timestamp, for countdown logic
   capacity: number;
   reserved: number;
   remaining: number;

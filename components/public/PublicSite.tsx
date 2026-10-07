@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { LiveDropView, PackageKind } from "@/lib/types";
 import { useReveal } from "./useReveal";
 import IntroOverlay from "./IntroOverlay";
+import AnnouncementBar from "./AnnouncementBar";
 import Hero from "./Hero";
 import CookieSection from "./CookieSection";
 import MannaStory from "./MannaStory";
@@ -13,12 +14,50 @@ import SiteFooter from "./SiteFooter";
 import StickyOrderBar from "./StickyOrderBar";
 import CheckoutSheet from "@/components/checkout/CheckoutSheet";
 
-export default function PublicSite({ drop }: { drop: LiveDropView }) {
-  const [replayToken, setReplayToken] = useState(0);
+const POLL_MS = 30_000;
+
+export default function PublicSite({ drop: initialDrop }: { drop: LiveDropView }) {
+  const [drop, setDrop] = useState(initialDrop);
   const [sheetPkg, setSheetPkg] = useState<PackageKind | null>(null);
   const [availSeen, setAvailSeen] = useState(false);
+  const sheetOpenRef = useRef(false);
+  sheetOpenRef.current = sheetPkg !== null;
 
   useReveal(useCallback(() => setAvailSeen(true), []));
+
+  // Keep availability live: poll while visible, refresh on return to the tab.
+  useEffect(() => {
+    let stopped = false;
+    const refresh = async () => {
+      if (document.visibilityState !== "visible") return;
+      if (sheetOpenRef.current) return; // the sheet manages its own snapshot
+      try {
+        const res = await fetch("/api/drop");
+        if (!res.ok) return;
+        const body = (await res.json()) as { drop: LiveDropView | null };
+        if (stopped) return;
+        if (body.drop === null) {
+          window.location.reload(); // drop ended entirely → closed page
+          return;
+        }
+        setDrop(body.drop);
+      } catch {
+        /* transient — next tick retries */
+      }
+    };
+    const id = window.setInterval(refresh, POLL_MS);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      stopped = true;
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, []);
 
   const goOrder = useCallback((e?: React.MouseEvent) => {
     e?.preventDefault?.();
@@ -33,7 +72,8 @@ export default function PublicSite({ drop }: { drop: LiveDropView }) {
 
   return (
     <div style={{ fontFamily: "var(--font-jost), Jost, sans-serif", color: "#24150D", animation: "mannaFade .6s ease" }}>
-      <IntroOverlay replayToken={replayToken} />
+      <IntroOverlay />
+      <AnnouncementBar drop={drop} />
       <main>
         <Hero onOrder={goOrder} />
         <CookieSection />
@@ -41,7 +81,7 @@ export default function PublicSite({ drop }: { drop: LiveDropView }) {
         <OrderSection drop={drop} availSeen={availSeen} onSelect={setSheetPkg} />
         <Testimonials />
       </main>
-      <SiteFooter onReplayIntro={() => setReplayToken((t) => t + 1)} onOrder={goOrder} />
+      <SiteFooter onOrder={goOrder} />
       <StickyOrderBar drop={drop} sheetOpen={sheetPkg !== null} onOrder={openSheetFromBar} />
       {sheetPkg !== null && (
         <CheckoutSheet drop={drop} initialPackage={sheetPkg} onClose={() => setSheetPkg(null)} />

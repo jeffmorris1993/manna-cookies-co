@@ -170,6 +170,28 @@ textarea {
   }
 }
 
+/* testimonial rail: snap-scroll columns on desktop, 2×3 grid on phones */
+.testi-rail {
+  margin-top: 48px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(170px, 1fr);
+  gap: clamp(10px, 1.4vw, 18px);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 6px;
+  -webkit-overflow-scrolling: touch;
+}
+@media (max-width: 640px) {
+  .testi-rail {
+    grid-auto-flow: row;
+    grid-template-columns: 1fr 1fr;
+    overflow-x: visible;
+    scroll-snap-type: none;
+    padding-bottom: 0;
+  }
+}
+
 /* generic letter-spaced micro-label (auth pages) */
 .eyebrow {
   font-size: 11px;
