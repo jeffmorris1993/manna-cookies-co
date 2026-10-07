@@ -21,7 +21,9 @@ export default function Hero({ onOrder }: { onOrder: (e?: React.MouseEvent) => v
           playsInline
           preload="metadata"
           className="absolute object-cover"
-          style={{ top: "-14%", left: "-4%", width: "108%", height: "128%" }}
+          // maxWidth: Tailwind preflight clamps <video> to max-width:100%,
+          // which silently defeats the 108% overscan
+          style={{ top: "-14%", left: "-4%", width: "108%", height: "128%", maxWidth: "none" }}
         />
       </div>
       <div
