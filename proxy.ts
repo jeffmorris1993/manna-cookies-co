@@ -14,6 +14,14 @@ export async function proxy(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // nothing in the browser reads these — lock them down and cap their
+      // lifetime to the 7-day session policy
+      cookieOptions: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: SESSION_ABSOLUTE_MS / 1000,
+      },
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -44,7 +52,7 @@ export async function proxy(request: NextRequest) {
     url.search = reason ? `?${reason}` : "";
     const r = NextResponse.redirect(url);
     // carry over any refreshed auth cookies, then clear our session markers
-    response.cookies.getAll().forEach((c) => r.cookies.set(c.name, c.value));
+    response.cookies.getAll().forEach((c) => r.cookies.set(c));
     r.cookies.delete(SESS_START);
     r.cookies.delete(LAST_SEEN);
     return r;
@@ -89,7 +97,7 @@ export async function proxy(request: NextRequest) {
     url.pathname = "/dashboard";
     url.search = "";
     const r = NextResponse.redirect(url);
-    response.cookies.getAll().forEach((c) => r.cookies.set(c.name, c.value));
+    response.cookies.getAll().forEach((c) => r.cookies.set(c));
     return r;
   }
 

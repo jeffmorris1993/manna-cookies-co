@@ -5,6 +5,14 @@ import { allowRequest, clientIp } from "@/lib/ratelimit";
 import { normalizePhone } from "@/lib/format";
 
 export async function POST(req: Request) {
+  const secFetch = req.headers.get("sec-fetch-site");
+  if (secFetch && secFetch !== "same-origin" && secFetch !== "same-site" && secFetch !== "none") {
+    return NextResponse.json({ error: "Invalid request." }, { status: 403 });
+  }
+  if (!req.headers.get("content-type")?.includes("application/json")) {
+    return NextResponse.json({ error: "Invalid request." }, { status: 415 });
+  }
+
   let body: unknown;
   try {
     body = await req.json();

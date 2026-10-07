@@ -160,6 +160,9 @@ export default function CheckoutSheet({
       setStep(5);
       router.refresh();
     } catch (e) {
+      // fresh idempotency key so the next attempt is a new reservation and a
+      // new Square payment — never a replay of the failed one
+      idemKey.current = crypto.randomUUID();
       setErr(e instanceof Error ? e.message : "Something went wrong. Please try again.");
     } finally {
       setProcessing(false);

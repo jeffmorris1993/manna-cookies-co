@@ -26,6 +26,7 @@ export const checkoutSchema = z
     phone: z
       .string()
       .trim()
+      .max(32, "Please add a valid phone number.")
       .refine(
         (v) => v.replace(/\D/g, "").length >= 7,
         "Please add a phone number we can text.",

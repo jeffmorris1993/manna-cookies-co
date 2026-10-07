@@ -21,10 +21,11 @@ type ReserveResult = {
 const RESERVE_ERRORS: Record<string, { status: number; code: string; message: string }> = {
   NOT_LIVE: { status: 409, code: "CLOSED", message: "Ordering just closed for this week." },
   CLOSED: { status: 409, code: "CLOSED", message: "Ordering just closed for this week." },
-  SOLD_OUT: {
+  SOLD_OUT: { status: 409, code: "SOLD_OUT", message: "Not enough cookies left for that package." },
+  BUSY: {
     status: 409,
-    code: "SOLD_OUT",
-    message: "Not enough cookies left for that package.",
+    code: "BUSY",
+    message: "Checkout is busy right now. Please try again in a few minutes.",
   },
   WINDOW_FULL: {
     status: 409,
@@ -43,7 +44,45 @@ const RESERVE_ERRORS: Record<string, { status: number; code: string; message: st
   },
 };
 
+const DECLINE_CODES = new Set([
+  "CARD_DECLINED",
+  "CVV_FAILURE",
+  "ADDRESS_VERIFICATION_FAILURE",
+  "INVALID_CARD",
+  "GENERIC_DECLINE",
+  "INSUFFICIENT_FUNDS",
+  "CARD_EXPIRED",
+  "INVALID_EXPIRATION",
+  "CARD_NOT_SUPPORTED",
+  "INVALID_CARD_DATA",
+  "VERIFY_CVV_FAILURE",
+  "VERIFY_AVS_FAILURE",
+  "CARD_TOKEN_EXPIRED",
+  "CARD_TOKEN_USED",
+]);
+
+function isDecline(err: unknown): boolean {
+  if (!(err instanceof SquareError)) return false;
+  const first = err.errors?.[0];
+  return first?.category === "PAYMENT_METHOD_ERROR" || DECLINE_CODES.has(first?.code ?? "");
+}
+
+/** Cross-site browser form posts can't set this combination. */
+function rejectCrossSite(req: Request): NextResponse | null {
+  const secFetch = req.headers.get("sec-fetch-site");
+  if (secFetch && secFetch !== "same-origin" && secFetch !== "same-site" && secFetch !== "none") {
+    return NextResponse.json({ error: "Invalid request." }, { status: 403 });
+  }
+  if (!req.headers.get("content-type")?.includes("application/json")) {
+    return NextResponse.json({ error: "Invalid request." }, { status: 415 });
+  }
+  return null;
+}
+
 export async function POST(req: Request) {
+  const crossSite = rejectCrossSite(req);
+  if (crossSite) return crossSite;
+
   let body: unknown;
   try {
     body = await req.json();
@@ -60,19 +99,13 @@ export async function POST(req: Request) {
 
   // Honeypot: fake a success so bots learn nothing. No reservation, no charge.
   if (input.website !== "") {
-    return NextResponse.json({
-      ok: true,
-      orderNumber: "MC-0000",
-      total: 0,
-    });
+    const fakeNo = 1000 + (parseInt(input.idempotencyKey.replace(/\D/g, "").slice(0, 4) || "0", 10) % 900);
+    return NextResponse.json({ ok: true, orderNumber: `MC-${fakeNo}`, total: 0 });
   }
 
   const phone = normalizePhone(input.phone);
   if (!phone) {
-    return NextResponse.json(
-      { error: "Please add a phone number we can text." },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Please add a phone number we can text." }, { status: 400 });
   }
 
   const ip = clientIp(req);
@@ -115,14 +148,22 @@ export async function POST(req: Request) {
   if (reserved.replayed && reserved.square_payment_id) {
     return NextResponse.json({ ok: true, orderNumber, total: reserved.price_cents });
   }
+  // Replay of a canceled attempt → the client must start a fresh attempt.
+  if (reserved.replayed && reserved.status === "canceled") {
+    return NextResponse.json(
+      { error: "That attempt was canceled. Please try again.", code: "RETRY" },
+      { status: 409 },
+    );
+  }
 
   const square = squareClient();
   const locationId = SQUARE_LOCATION_ID();
   const pkgName = PACKAGE_META[input.package].name;
 
+  // ---- Stage A: Square customer + order (no money moves here) ----
+  let squareCustomerId: string | undefined;
+  let squareOrderId: string | undefined;
   try {
-    // 2. Square customer: find by phone, else create.
-    let squareCustomerId: string | undefined;
     const search = await square.customers.search({
       query: { filter: { phoneNumber: { exact: phone } } },
       limit: BigInt(1),
@@ -140,7 +181,7 @@ export async function POST(req: Request) {
         squareCustomerId = createdCustomer.customer?.id;
       } catch (custErr) {
         // Square is stricter about phone formats than we are — never lose the
-        // sale over it. Retry without the phone, then without a customer at all.
+        // sale over it. Retry without the phone.
         const phoneRejected =
           custErr instanceof SquareError &&
           custErr.errors?.some((e) => e.field === "phone_number");
@@ -155,7 +196,6 @@ export async function POST(req: Request) {
       }
     }
 
-    // 3. Square order.
     const { data: dropRow } = await db
       .from("drops")
       .select("cookie")
@@ -176,10 +216,21 @@ export async function POST(req: Request) {
         ],
       },
     });
-    const squareOrderId = orderRes.order?.id;
+    squareOrderId = orderRes.order?.id;
+  } catch (err) {
+    // No payment was attempted — releasing the hold is unambiguously safe.
+    await db.rpc("release_order", { p_order_id: reserved.order_id });
+    console.error("checkout_stage_a_error", err instanceof SquareError ? JSON.stringify(err.errors) : err);
+    return NextResponse.json(
+      { error: "Payment couldn't be processed. You have not been charged.", code: "SQUARE_ERROR" },
+      { status: 502 },
+    );
+  }
 
-    // 4. Square payment — idempotency key shared with our reservation, so a
-    //    double submit can never double-charge.
+  // ---- Stage B: the payment itself. Failures here are classified: only a
+  // definitive decline releases the hold; anything indeterminate keeps it and
+  // alarms, because the card may have been charged. ----
+  try {
     const paymentRes = await square.payments.create({
       idempotencyKey: input.idempotencyKey,
       sourceId: input.sourceToken,
@@ -190,12 +241,36 @@ export async function POST(req: Request) {
       ...(input.verificationToken ? { verificationToken: input.verificationToken } : {}),
     });
     const payment = paymentRes.payment;
-    if (!payment || (payment.status !== "COMPLETED" && payment.status !== "APPROVED")) {
-      throw new Error(`payment_status_${payment?.status ?? "missing"}`);
+
+    if (payment?.status === "FAILED" || payment?.status === "CANCELED") {
+      await db.rpc("release_order", { p_order_id: reserved.order_id });
+      return NextResponse.json(
+        { error: "Your card was declined. Please try another card.", code: "DECLINED" },
+        { status: 402 },
+      );
+    }
+    if (!payment || payment.status !== "COMPLETED") {
+      // payment exists but is not final — do NOT release; owner reconciles
+      console.error("CRITICAL_UNCONFIRMED_PAYMENT", {
+        reason: `payment_status_${payment?.status ?? "missing"}`,
+        orderId: reserved.order_id,
+        orderNumber,
+        squarePaymentId: payment?.id,
+        idempotencyKey: input.idempotencyKey,
+      });
+      return NextResponse.json(
+        {
+          error:
+            "We couldn't confirm your payment. Please don't retry — we'll contact you to sort it out.",
+          code: "UNCONFIRMED",
+        },
+        { status: 500 },
+      );
     }
 
-    // 5. Confirm in our DB (retry a few times — money has been taken).
+    // Confirm in our DB (retry — money has been taken).
     let confirmed = false;
+    let lastErr: string | undefined;
     for (let attempt = 0; attempt < 3 && !confirmed; attempt++) {
       const { error: confirmErr } = await db.rpc("confirm_order", {
         p_order_id: reserved.order_id,
@@ -204,44 +279,45 @@ export async function POST(req: Request) {
         p_square_customer_id: squareCustomerId ?? null,
       });
       if (!confirmErr) confirmed = true;
-      else if (attempt === 2) {
-        console.error("CRITICAL_UNCONFIRMED_PAYMENT", {
-          orderId: reserved.order_id,
-          orderNumber,
-          squarePaymentId: payment.id,
-          idempotencyKey: input.idempotencyKey,
-          error: confirmErr.message,
-        });
-      }
+      else lastErr = confirmErr.message;
+    }
+    if (!confirmed) {
+      console.error("CRITICAL_UNCONFIRMED_PAYMENT", {
+        reason: "confirm_order_failed",
+        orderId: reserved.order_id,
+        orderNumber,
+        squarePaymentId: payment.id,
+        idempotencyKey: input.idempotencyKey,
+        error: lastErr,
+      });
+      // The customer paid — honor the order; the owner reconciles from logs.
     }
 
     return NextResponse.json({ ok: true, orderNumber, total: reserved.price_cents });
   } catch (err) {
-    // Payment failed or Square unavailable → free the reserved cookies.
-    await db.rpc("release_order", { p_order_id: reserved.order_id });
-
-    if (err instanceof SquareError) {
-      const first = err.errors?.[0];
-      const declined =
-        first?.category === "PAYMENT_METHOD_ERROR" ||
-        ["CARD_DECLINED", "CVV_FAILURE", "ADDRESS_VERIFICATION_FAILURE", "INVALID_CARD",
-          "GENERIC_DECLINE", "INSUFFICIENT_FUNDS", "CARD_EXPIRED"].includes(first?.code ?? "");
-      if (declined) {
-        return NextResponse.json(
-          { error: "Your card was declined. Please try another card.", code: "DECLINED" },
-          { status: 402 },
-        );
-      }
-      console.error("square_error", JSON.stringify(err.errors));
+    if (isDecline(err)) {
+      await db.rpc("release_order", { p_order_id: reserved.order_id });
       return NextResponse.json(
-        { error: "Payment couldn't be processed. Please try again.", code: "SQUARE_ERROR" },
-        { status: 502 },
+        { error: "Your card was declined. Please try another card.", code: "DECLINED" },
+        { status: 402 },
       );
     }
 
-    console.error("checkout_error", err);
+    // Indeterminate: timeout / 5xx / unknown — Square may have captured the
+    // card. Keep the hold, alarm loudly, and tell the customer not to retry.
+    console.error("CRITICAL_UNCONFIRMED_PAYMENT", {
+      reason: "payment_create_indeterminate",
+      orderId: reserved.order_id,
+      orderNumber,
+      idempotencyKey: input.idempotencyKey,
+      error: err instanceof SquareError ? JSON.stringify(err.errors) : String(err),
+    });
     return NextResponse.json(
-      { error: "Something went wrong. You have not been charged.", code: "UNKNOWN" },
+      {
+        error:
+          "We couldn't confirm your payment. Please don't retry — we'll contact you to sort it out.",
+        code: "UNCONFIRMED",
+      },
       { status: 500 },
     );
   }

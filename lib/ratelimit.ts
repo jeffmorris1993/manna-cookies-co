@@ -23,9 +23,18 @@ export async function allowRequest(
   return data === true;
 }
 
-/** Client IP from Vercel/proxy headers (first x-forwarded-for hop). */
+/**
+ * Client IP for rate-limit buckets. Prefers Vercel's trusted header; falls
+ * back to the LAST x-forwarded-for hop (the proxy-appended one) — the first
+ * hop is client-controlled in a standard XFF chain.
+ */
 export function clientIp(req: Request): string {
+  const vercel = req.headers.get("x-vercel-forwarded-for");
+  if (vercel) return vercel.split(",")[0]!.trim();
   const fwd = req.headers.get("x-forwarded-for");
-  if (fwd) return fwd.split(",")[0]!.trim();
+  if (fwd) {
+    const hops = fwd.split(",").map((s) => s.trim()).filter(Boolean);
+    if (hops.length) return hops[hops.length - 1]!;
+  }
   return req.headers.get("x-real-ip") ?? "unknown";
 }
