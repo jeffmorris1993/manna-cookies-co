@@ -19,15 +19,15 @@ await page.waitForTimeout(1200);
 await page.getByRole("button", { name: /THE MANNA HALF DOZEN/i }).click({ force: true });
 
 // step 2: details
-await page.waitForSelector("#co-name");
-await page.fill("#co-name", "Test Customer");
-await page.fill("#co-phone", "202-555-0147");
-await page.fill("#co-email", "test.customer@example.com");
-await page.getByRole("button", { name: "Continue" }).click({ force: true });
+await page.waitForSelector('input[placeholder="Your name"]');
+await page.fill('input[placeholder="Your name"]', "Test Customer");
+await page.fill('input[placeholder="(555) 555-0100"]', "202-555-0147");
+await page.fill('input[placeholder="you@email.com"]', "test.customer@example.com");
+await page.getByRole("button", { name: "CONTINUE" }).click({ force: true });
 
 // step 3: window
 await page.getByRole("button", { name: /9:00 – 11:00 AM/ }).click({ force: true });
-await page.getByRole("button", { name: "Continue" }).click({ force: true });
+await page.getByRole("button", { name: "CONTINUE" }).click({ force: true });
 
 // step 4: Square card iframe
 await page.waitForSelector("#card-container iframe", { timeout: 30000 });
@@ -45,7 +45,7 @@ await page.evaluate(() => {
 
 // outcome: confirmation or error text
 try {
-  await page.waitForSelector("text=YOUR MANNA IS RESERVED.", { timeout: 45000 });
+  await page.waitForSelector("text=IS RESERVED.", { timeout: 45000 });
   const orderNo = await page
     .locator("text=/MC-\\d+/")
     .first()
@@ -53,7 +53,7 @@ try {
   console.log("SUCCESS — confirmation shown, order:", orderNo?.trim());
   await page.screenshot({ path: "/tmp/manna-checkout-confirm.png" });
 } catch {
-  const err = await page.locator(".text-error").first().textContent().catch(() => null);
+  const err = await page.getByText(/declined|wrong|couldn|try again/i).first().textContent().catch(() => null);
   console.log("NO CONFIRMATION — error shown:", err);
   await page.screenshot({ path: "/tmp/manna-checkout-fail.png", fullPage: true });
   process.exitCode = 1;

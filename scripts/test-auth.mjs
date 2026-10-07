@@ -3,7 +3,8 @@
 import { chromium } from "playwright";
 import { readFileSync } from "node:fs";
 
-const PASSWORD = readFileSync(".owner-temp-password.txt", "utf8").trim();
+const PASSWORD = (process.env.MC_TEST_PASSWORD ?? "").trim();
+if (!PASSWORD) { console.error("Set MC_TEST_PASSWORD"); process.exit(1); }
 const base = "http://localhost:3457";
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });

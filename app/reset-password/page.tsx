@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { OWNER_EMAIL } from "@/lib/auth";
 import ResetForm from "./ResetForm";
@@ -12,16 +13,17 @@ export const metadata = {
 export default async function ResetPasswordPage({
   searchParams,
 }: {
-  searchParams: Promise<{ code?: string }>;
+  searchParams: Promise<{ code?: string; limited?: string }>;
 }) {
-  const { code } = await searchParams;
-  const supabase = await supabaseServer();
+  const { code, limited } = await searchParams;
 
-  // The email link lands here with ?code= — exchange it for a recovery session.
+  // The email link lands here with ?code= — hand it to the route handler,
+  // which can actually persist the recovery session cookies.
   if (code) {
-    await supabase.auth.exchangeCodeForSession(code);
+    redirect(`/auth/confirm?code=${encodeURIComponent(code)}`);
   }
 
+  const supabase = await supabaseServer();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -38,8 +40,9 @@ export default async function ResetPasswordPage({
           ) : (
             <div className="mt-6">
               <p className="text-sm leading-relaxed text-muted">
-                This reset link is invalid or expired. Links must be opened in the same browser
-                that requested them.
+                {limited
+                  ? "Too many attempts. Please wait an hour and use a fresh link."
+                  : "This reset link is invalid or expired. Links must be opened in the same browser that requested them."}
               </p>
               <Link
                 href="/forgot-password"

@@ -34,10 +34,28 @@ export async function updateOrderStatus(orderId: string, status: string): Promis
   const parsed = statusSchema.safeParse({ orderId, status });
   if (!parsed.success) return fail("Invalid request.");
 
+  // only legal pipeline moves
+  const TRANSITIONS: Record<string, string[]> = {
+    new: ["preparing", "ready"],
+    preparing: ["ready"],
+    ready: ["picked"],
+    picked: ["ready"], // undo
+  };
+  const { data: current } = await supabase
+    .from("orders")
+    .select("status")
+    .eq("id", parsed.data.orderId)
+    .maybeSingle();
+  if (!current) return fail("Order not found.");
+  if (!TRANSITIONS[current.status]?.includes(parsed.data.status)) {
+    return fail("That status change isn't allowed.");
+  }
+
   const { error } = await supabase
     .from("orders")
     .update({ status: parsed.data.status })
-    .eq("id", parsed.data.orderId);
+    .eq("id", parsed.data.orderId)
+    .eq("status", current.status);
   if (error) return fail("Couldn't update the order.");
   revalidateDashboard();
   return { ok: true };
@@ -104,6 +122,15 @@ export async function saveDrop(input: SaveDropInput): Promise<ActionResult> {
   if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? "Check the drop details.");
   const d = parsed.data;
 
+  // completed drops are a historical record — never rewrite them
+  const { data: target } = await supabase
+    .from("drops")
+    .select("status")
+    .eq("id", d.dropId)
+    .maybeSingle();
+  if (!target) return fail("Drop not found.");
+  if (target.status === "complete") return fail("Completed drops can't be edited.");
+
   for (const w of d.windows) {
     if (w.ends <= w.starts) return fail("Each pickup window must end after it starts.");
   }
@@ -145,7 +172,8 @@ export async function saveDrop(input: SaveDropInput): Promise<ActionResult> {
       const { error } = await supabase
         .from("pickup_windows")
         .update({ starts: w.starts, ends: w.ends, is_full: w.full, sort: i })
-        .eq("id", w.id);
+        .eq("id", w.id)
+        .eq("drop_id", d.dropId); // never touch another drop's window
       if (error) return fail("Couldn't save a pickup window.");
     } else {
       const { error } = await supabase

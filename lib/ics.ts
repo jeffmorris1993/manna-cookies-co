@@ -19,6 +19,9 @@ export function downloadPickupIcs(opts: {
     .replace(/\.\d{3}/, "");
   const uid = `${opts.orderNumber}-${Date.now()}@mannacookies`;
 
+  // ICS text escaping: no raw newlines, escape separators
+  const esc = (t: string) => t.replace(/[\r\n]+/g, " ").replace(/([,;\\])/g, "\\$1");
+
   const ics = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -28,8 +31,8 @@ export function downloadPickupIcs(opts: {
     `DTSTAMP:${stamp}`,
     `DTSTART:${d}T${s}`,
     `DTEND:${d}T${e}`,
-    `SUMMARY:Pick up your Manna (${opts.packageName.toUpperCase()})`,
-    `DESCRIPTION:Order ${opts.orderNumber} · ${opts.cookie}`,
+    `SUMMARY:Pick up your Manna (${esc(opts.packageName.toUpperCase())})`,
+    `DESCRIPTION:Order ${esc(opts.orderNumber)} · ${esc(opts.cookie)}`,
     "END:VEVENT",
     "END:VCALENDAR",
   ].join("\r\n");
