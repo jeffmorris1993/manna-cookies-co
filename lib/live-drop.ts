@@ -80,6 +80,7 @@ export async function getLiveDropView(): Promise<LiveDropView | null> {
     id: drop.id,
     cookie: drop.cookie,
     desc: drop.description,
+    pickupDateISO: drop.pickup_date,
     pickupDateLabel: longDate(drop.pickup_date),
     pickupShort: shortDate(drop.pickup_date),
     deadlineLabel: deadlineLabel(deadline),
@@ -96,6 +97,8 @@ export async function getLiveDropView(): Promise<LiveDropView | null> {
       id: w.id,
       label: windowLabel(w.starts.slice(0, 5), w.ends.slice(0, 5)),
       full: w.is_full,
+      starts: w.starts.slice(0, 5),
+      ends: w.ends.slice(0, 5),
     })),
   };
 }

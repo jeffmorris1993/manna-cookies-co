@@ -42,12 +42,15 @@ export interface PublicWindow {
   id: string;
   label: string;
   full: boolean;
+  starts: string; // "09:00"
+  ends: string; // "11:00"
 }
 
 export interface LiveDropView {
   id: string;
   cookie: string;
   desc: string;
+  pickupDateISO: string; // "2026-10-10"
   pickupDateLabel: string; // "Saturday, Oct 10"
   pickupShort: string; // "SAT, OCT 10"
   deadlineLabel: string; // "Thursday, Oct 8 · 8:00 PM"
