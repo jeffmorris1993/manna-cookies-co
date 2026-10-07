@@ -36,13 +36,15 @@ export function deadlineFor(pickupISO: string): Date {
 }
 
 export function deadlineLabel(deadline: Date): string {
+  // always display in the bakery's timezone, regardless of server TZ
   const day = deadline.toLocaleDateString("en-US", {
     weekday: "long",
     month: "short",
     day: "numeric",
+    timeZone: "America/New_York",
   });
   const time = deadline
-    .toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+    .toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" })
     .replace(" ", " ");
   return `${day} · ${time}`;
 }
