@@ -9,7 +9,9 @@ export default function Hero({ onOrder }: { onOrder: (e?: React.MouseEvent) => v
       className="relative overflow-hidden"
       style={{ height: "100svh", minHeight: 580, background: "#1B0F09", color: "#F5EFE4" }}
     >
-      <div data-parallax=".28" className="absolute inset-0">
+      {/* 28% vertical overscan so the parallax shift (max ~12% of hero height)
+          can never slide the video off its frame and expose the backdrop */}
+      <div data-parallax=".12" className="absolute inset-0">
         <video
           src="/hero.mp4"
           poster="/cookie-stack.jpg"
@@ -19,7 +21,7 @@ export default function Hero({ onOrder }: { onOrder: (e?: React.MouseEvent) => v
           playsInline
           preload="metadata"
           className="absolute object-cover"
-          style={{ top: "-4%", left: "-4%", width: "108%", height: "108%" }}
+          style={{ top: "-14%", left: "-4%", width: "108%", height: "128%" }}
         />
       </div>
       <div
