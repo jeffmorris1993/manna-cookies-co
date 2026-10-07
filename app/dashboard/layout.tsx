@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { requireOwner } from "@/lib/auth";
 import TabBar from "@/components/dashboard/TabBar";
@@ -19,6 +20,7 @@ function todayLabel() {
 }
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  await connection();
   let supabase;
   try {
     ({ supabase } = await requireOwner());
@@ -33,23 +35,48 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <ToastProvider>
-      <div className="min-h-screen bg-cream-sunk pb-28">
-        <header className="mx-auto flex max-w-[760px] items-center justify-between px-5 pt-6">
-          <div>
-            <p className="eyebrow text-muted-2" style={{ fontSize: "9.5px" }}>
-              {todayLabel()}
-            </p>
+      <div
+        style={{
+          minHeight: "100svh",
+          background: "#F2EBDF",
+          color: "#24150D",
+          fontSize: 15,
+          paddingBottom: 110,
+        }}
+      >
+        <header
+          style={{
+            maxWidth: 760,
+            margin: "0 auto",
+            padding: "22px 18px 6px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 12,
+          }}
+        >
+          <div style={{ fontSize: 11, letterSpacing: ".24em", fontWeight: 500, color: "#8A6440" }}>
+            {todayLabel()}
           </div>
-          <div className="flex items-center gap-3">
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <form action={signOut}>
-              <button className="eyebrow text-muted-2 transition-colors hover:text-brown" style={{ fontSize: "9px" }}>
-                Sign out
+              <button
+                className="cursor-pointer border-0 bg-transparent"
+                style={{ fontSize: 10, letterSpacing: ".2em", color: "#8A7466", fontWeight: 500 }}
+              >
+                SIGN OUT
               </button>
             </form>
-            <Image src="/logo.png" alt="Manna Cookies & Co." width={48} height={48} />
+            <Image
+              src="/logo.png"
+              alt="Manna"
+              width={48}
+              height={48}
+              style={{ width: 48, height: 48, display: "block" }}
+            />
           </div>
         </header>
-        <div className="mx-auto max-w-[760px] px-5">{children}</div>
+        <div style={{ maxWidth: 760, margin: "0 auto", padding: "0 18px" }}>{children}</div>
         <TabBar newOrders={count ?? 0} />
       </div>
     </ToastProvider>

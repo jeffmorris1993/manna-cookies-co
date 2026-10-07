@@ -50,68 +50,70 @@ export default async function CustomerDetailPage({
     : "—";
 
   return (
-    <main className="pt-8">
-      <Link href="/dashboard/customers" className="eyebrow text-muted-2 hover:text-brown">
+    <main style={{ padding: "12px 0", animation: "mannaIn .35s ease" }}>
+      <Link href="/dashboard/customers" style={{ fontSize: 14, color: "#4A2616", padding: "4px 0" }}>
         ← All customers
       </Link>
-      <h1 className="mt-3 font-display text-4xl font-medium text-ink">{customer.name}</h1>
-      <p className="mt-2 text-sm">
-        <a href={`tel:${customer.phone}`} className="text-brown underline-offset-2 hover:underline">
-          {customer.phone}
-        </a>
-        {customer.email && (
-          <>
-            <span className="text-muted-2"> · </span>
-            <a
-              href={`mailto:${customer.email}`}
-              className="text-brown underline-offset-2 hover:underline"
-            >
-              {customer.email}
-            </a>
-          </>
-        )}
-      </p>
-
-      <div className="mt-6 grid grid-cols-3 gap-3">
-        {[
-          [String(rows.length), "Total Orders"],
-          [formatMoney(totalSpent), "Total Spent"],
-          [lastOrder, "Last Order"],
-        ].map(([v, l]) => (
-          <div key={l} className="border border-brown/10 bg-cream-raised px-3 py-5 text-center">
-            <div className="font-display text-2xl font-medium text-ink">{v}</div>
-            <div className="eyebrow mt-2 text-muted-2" style={{ fontSize: "8px" }}>
-              {l}
+      <div style={{ marginTop: 6, background: "#FBF8F1", borderRadius: 16, padding: 20 }}>
+        <div className="font-display" style={{ fontSize: 28 }}>
+          {customer.name}
+        </div>
+        <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: "8px 18px", fontSize: 14 }}>
+          <a href={`tel:${customer.phone}`}>{customer.phone}</a>
+          {customer.email && <a href={`mailto:${customer.email}`}>{customer.email}</a>}
+        </div>
+        <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
+          {(
+            [
+              ["TOTAL ORDERS", String(rows.length)],
+              ["TOTAL SPENT", formatMoney(totalSpent)],
+              ["LAST ORDER", lastOrder],
+            ] as const
+          ).map(([l, v]) => (
+            <div key={l}>
+              <div style={{ fontSize: 10, letterSpacing: ".14em", color: "#6E5546" }}>{l}</div>
+              <div className="font-display" style={{ fontSize: 26, marginTop: 2 }}>
+                {v}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
-      <h2 className="eyebrow mt-8 text-muted-2">Order History</h2>
-      <div className="mt-3 flex flex-col gap-3">
+      <div style={{ marginTop: 14, fontSize: 11, letterSpacing: ".2em", fontWeight: 500, color: "#6E5546" }}>
+        ORDER HISTORY
+      </div>
+      <div style={{ marginTop: 8, background: "#FBF8F1", borderRadius: 16, overflow: "hidden" }}>
         {rows.length === 0 && (
-          <p className="border border-brown/10 bg-cream-raised px-5 py-6 text-center text-sm text-muted">
+          <div style={{ padding: "32px 0", textAlign: "center", color: "#6E5546", fontSize: 14 }}>
             No orders yet.
-          </p>
+          </div>
         )}
         {rows.map((o) => (
           <div
             key={o.id}
-            className="flex items-center justify-between gap-4 border border-brown/10 bg-cream-raised px-5 py-4"
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              padding: "14px 16px",
+              borderBottom: "1px solid rgba(74,38,22,.1)",
+              fontSize: 14,
+            }}
           >
-            <div className="min-w-0">
-              <p className="truncate text-sm text-ink">
-                {PACKAGE_META[o.package].name} · {o.drops?.cookie ?? ""}
-              </p>
-              <p className="mt-0.5 text-xs text-muted-2">
+            <div>
+              <div style={{ fontWeight: 500 }}>
+                {PACKAGE_META[o.package].name}
+                {o.drops?.cookie ? ` · ${o.drops.cookie}` : ""}
+              </div>
+              <div style={{ color: "#6E5546", marginTop: 2 }}>
                 {displayOrderNumber(o.order_number)} ·{" "}
-                {new Date(o.created_at).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })}
-              </p>
+                {new Date(o.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+              </div>
             </div>
-            <p className="flex-none font-display text-lg text-ink">{formatMoney(o.price_cents)}</p>
+            <div className="font-display" style={{ fontSize: 18 }}>
+              {formatMoney(o.price_cents)}
+            </div>
           </div>
         ))}
       </div>

@@ -47,8 +47,8 @@ export default async function CustomersPage() {
     .sort((a, b) => b.spentCents - a.spentCents);
 
   return (
-    <main className="pt-8">
-      <h1 className="font-display text-4xl font-medium text-ink">Customers</h1>
+    <main style={{ padding: "12px 0" }}>
+      <h1 className="font-display" style={{ fontSize: 30, lineHeight: 1.1 }}>Customers</h1>
       <CustomerList customers={summaries} />
     </main>
   );

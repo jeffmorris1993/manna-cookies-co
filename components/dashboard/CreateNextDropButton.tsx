@@ -26,9 +26,19 @@ export default function CreateNextDropButton({ fromDropId }: { fromDropId: strin
           }
         })
       }
-      className="eyebrow mt-5 w-full border border-dashed border-brown/40 px-6 py-5 text-brown transition-colors hover:border-brown disabled:opacity-60"
+      className="cursor-pointer disabled:opacity-60"
+      style={{
+        height: 58,
+        border: "1px dashed #4A2616",
+        borderRadius: 14,
+        background: "transparent",
+        color: "#24150D",
+        fontSize: 13,
+        letterSpacing: ".2em",
+        fontWeight: 600,
+      }}
     >
-      {pending ? "Creating…" : "+ Create Next Drop"}
+      {pending ? "CREATING…" : "+ CREATE NEXT DROP"}
     </button>
   );
 }

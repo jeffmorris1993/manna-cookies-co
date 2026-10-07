@@ -19,31 +19,60 @@ export default function OpenCloseCard({
   const toggle = () =>
     start(async () => {
       const res = await toggleOpen(dropId, !isOpen);
-      toast(res.ok ? (isOpen ? "Orders closed" : "Orders open") : (res.error ?? "Couldn't update"));
+      toast(
+        res.ok
+          ? isOpen
+            ? "Orders closed on the website"
+            : "Orders are open"
+          : (res.error ?? "Couldn't update"),
+      );
     });
 
   return (
-    <div className="mt-4 flex items-center justify-between border border-brown/10 bg-cream-raised px-5 py-4">
-      <div>
-        <div className="flex items-center gap-2">
-          <span
-            className="inline-block h-2 w-2 rounded-full"
-            style={{ background: isOpen ? "#7A8C4E" : "#A8927F" }}
-          />
-          <span className="eyebrow text-ink">{isOpen ? "Orders Open" : "Orders Closed"}</span>
+    <div
+      style={{
+        background: "#FBF8F1",
+        borderRadius: 16,
+        padding: 18,
+        display: "flex",
+        flexWrap: "wrap",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: 14,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <span
+          style={{
+            width: 10,
+            height: 10,
+            borderRadius: "50%",
+            background: isOpen ? "#7A8C4E" : "#A8927F",
+          }}
+        />
+        <div>
+          <div style={{ fontSize: 14, letterSpacing: ".18em", fontWeight: 600 }}>
+            {isOpen ? "ORDERS OPEN" : "ORDERS CLOSED"}
+          </div>
+          <div style={{ fontSize: 13, color: "#6E5546", marginTop: 2 }}>Deadline {deadlineLabel}</div>
         </div>
-        <p className="mt-1 text-xs text-muted-2">Deadline {deadlineLabel}</p>
       </div>
       <button
         onClick={toggle}
         disabled={pending}
-        className={`eyebrow px-5 py-3 transition-all duration-300 disabled:opacity-60 ${
-          isOpen
-            ? "border border-brown/30 text-brown hover:border-brown"
-            : "bg-ink text-cream hover:tracking-[0.42em]"
-        }`}
+        className="cursor-pointer border-0 disabled:opacity-60"
+        style={{
+          height: 52,
+          padding: "0 22px",
+          borderRadius: 12,
+          background: isOpen ? "#24150D" : "#C9A57E",
+          color: isOpen ? "#F5EFE4" : "#24150D",
+          fontSize: 12,
+          letterSpacing: ".18em",
+          fontWeight: 600,
+        }}
       >
-        {pending ? "…" : isOpen ? "Close Orders" : "Open Orders"}
+        {pending ? "…" : isOpen ? "CLOSE ORDERS" : "OPEN ORDERS"}
       </button>
     </div>
   );

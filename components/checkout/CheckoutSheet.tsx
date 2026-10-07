@@ -10,6 +10,20 @@ import { useSquarePayments, type WalletKind } from "./useSquarePayments";
 
 type Confirmation = { orderNumber: string; total: number };
 
+const LABEL: React.CSSProperties = { fontSize: 11, letterSpacing: ".18em", fontWeight: 500 };
+const INPUT: React.CSSProperties = {
+  height: 54,
+  border: "1px solid rgba(74,38,22,.3)",
+  background: "#FFFFFF",
+  borderRadius: 10,
+  padding: "0 14px",
+  fontSize: 16,
+  letterSpacing: 0,
+  fontWeight: 400,
+  color: "#24150D",
+  outline: "none",
+};
+
 export default function CheckoutSheet({
   drop: initialDrop,
   initialPackage,
@@ -27,6 +41,7 @@ export default function CheckoutSheet({
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [windowId, setWindowId] = useState<string | null>(null);
+  const [payTab, setPayTab] = useState<"card" | "wallet">("card");
   const [err, setErr] = useState("");
   const [processing, setProcessing] = useState(false);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
@@ -57,14 +72,12 @@ export default function CheckoutSheet({
     refreshDrop();
   }, [refreshDrop]);
 
-  // fresh payment identity when the order itself changes
   const changeOrder = (nextPkg?: PackageKind, nextWindow?: string | null) => {
     idemKey.current = crypto.randomUUID();
     if (nextPkg) setPkg(nextPkg);
     if (nextWindow !== undefined) setWindowId(nextWindow);
   };
 
-  // lock body scroll while open
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -79,6 +92,10 @@ export default function CheckoutSheet({
     "Manna Cookies & Co.",
   );
 
+  const setErrR = (m: string): false => {
+    setErr(m);
+    return false;
+  };
   const validateDetails = (): boolean => {
     if (!name.trim()) return setErrR("Please add your name.");
     if (phone.replace(/\D/g, "").length < 7)
@@ -86,17 +103,11 @@ export default function CheckoutSheet({
     if (!/.+@.+\..+/.test(email)) return setErrR("Please add a valid email.");
     return true;
   };
-  const setErrR = (m: string): false => {
-    setErr(m);
-    return false;
-  };
 
   const next = () => {
     setErr("");
-    if (step === 1) {
-      if (!selected?.available) return;
-      setStep(2);
-    } else if (step === 2) {
+    if (step === 1) setStep(2);
+    else if (step === 2) {
       if (validateDetails()) setStep(3);
     } else if (step === 3) {
       if (!windowId) {
@@ -147,7 +158,7 @@ export default function CheckoutSheet({
       }
       setConfirmation({ orderNumber: body.orderNumber, total: body.total });
       setStep(5);
-      router.refresh(); // update the availability bar behind the sheet
+      router.refresh();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Something went wrong. Please try again.");
     } finally {
@@ -167,313 +178,502 @@ export default function CheckoutSheet({
     });
   };
 
-  const stepTitle =
-    step === 1
-      ? "Choose quantity"
-      : step === 2
-        ? "Your details"
-        : step === 3
-          ? "Pickup"
-          : step === 4
-            ? "Payment"
-            : "";
-
-  const inputCls =
-    "w-full border border-brown/25 bg-cream-raised px-4 py-3.5 text-[15px] text-ink outline-none transition-colors placeholder:text-muted-2 focus:border-brown";
-  const labelCls = "eyebrow mb-2 block text-left text-muted-2";
+  const stepTitle = ["Choose quantity", "Your details", "Pickup", "Payment", ""][step - 1] || "";
+  const shortDate = drop.pickupShort.replace(/^PICKUP /, "");
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal>
-      <button
-        aria-label="Close checkout"
+    <div className="fixed inset-0 z-[70] flex items-end justify-center" role="dialog" aria-modal>
+      <div
         onClick={onClose}
-        className="absolute inset-0 cursor-default"
-        style={{ background: "rgba(20,11,6,.6)" }}
+        style={{ position: "absolute", inset: 0, background: "rgba(20,11,6,.6)", animation: "mannaFade .3s ease" }}
       />
       <div
-        className="relative flex w-full max-w-[540px] flex-col overflow-hidden rounded-t-[22px] bg-cream-raised"
-        style={{ animation: "mannaSheet .45s cubic-bezier(.2,.7,.2,1) both", maxHeight: "92svh" }}
+        style={{
+          position: "relative",
+          width: "100%",
+          maxWidth: 540,
+          maxHeight: "92svh",
+          overflow: "auto",
+          background: "#FBF8F1",
+          borderRadius: "22px 22px 0 0",
+          padding: "14px 22px 30px",
+          animation: "mannaSheet .45s cubic-bezier(.2,.8,.2,1)",
+        }}
       >
-        <div className="flex-none px-6 pt-3 sm:px-8">
-          <div className="mx-auto h-1 w-10 rounded-full bg-brown/20" />
-          {/* progress */}
-          <div className="mt-5 flex gap-1.5">
-            {[1, 2, 3, 4, 5].map((s) => (
-              <div
-                key={s}
-                className={`h-[3px] flex-1 rounded ${s <= step ? "bg-brown" : "bg-brown/15"}`}
-              />
-            ))}
+        <div
+          style={{ width: 40, height: 4, borderRadius: 2, background: "rgba(74,38,22,.2)", margin: "0 auto 18px" }}
+        />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontSize: 11, letterSpacing: ".24em", fontWeight: 500, color: "#8A6440" }}>
+            {step === 5 ? "CONFIRMED" : `STEP ${step} OF 5`}
           </div>
-          <div className="mt-3 flex items-center justify-between">
-            <span className="eyebrow text-muted-2">
-              {step === 5 ? "Confirmed" : `Step ${step} of 5`}
-            </span>
-            {step >= 2 && step <= 4 && selected && (
-              <button
-                onClick={() => {
-                  changeOrder();
-                  setStep(1);
-                }}
-                className="eyebrow text-brown underline-offset-4 hover:underline"
-              >
-                {selected.title} · {formatMoney(selected.priceCents)} — Change
-              </button>
-            )}
-          </div>
-          {stepTitle && (
-            <h2 className="mt-4 text-left font-display text-3xl font-medium text-ink">
-              {stepTitle}
-            </h2>
-          )}
+          <button
+            onClick={onClose}
+            aria-label="Close checkout"
+            className="cursor-pointer border-0 bg-transparent"
+            style={{ width: 44, height: 44, marginRight: -10, fontSize: 24, color: "#4A2616" }}
+          >
+            ×
+          </button>
         </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 4, marginTop: 4 }}>
+          {[1, 2, 3, 4, 5].map((s) => (
+            <div
+              key={s}
+              style={{
+                height: 2,
+                background: s <= step ? "#4A2616" : "rgba(74,38,22,.15)",
+                transition: "background .4s",
+              }}
+            />
+          ))}
+        </div>
+        {stepTitle && (
+          <div className="font-display" style={{ marginTop: 24, fontSize: 30, lineHeight: 1.1 }}>
+            {stepTitle}
+          </div>
+        )}
 
-        <div className="flex-1 overflow-y-auto px-6 pb-6 pt-5 sm:px-8">
-          {step === 1 && (
-            <div className="flex flex-col gap-3">
-              {drop.packages.map((p) => (
+        {step >= 2 && step <= 3 && selected && (
+          <div
+            style={{
+              marginTop: 18,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 12,
+              padding: "14px 16px",
+              background: "#F2EBDF",
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 12, letterSpacing: ".16em", fontWeight: 500 }}>{selected.title}</div>
+              <div style={{ fontSize: 13, color: "#5A4334", marginTop: 3 }}>
+                {selected.sub} · {formatMoney(selected.priceCents)}
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                changeOrder();
+                setStep(1);
+              }}
+              className="cursor-pointer border-0 bg-transparent"
+              style={{ fontSize: 13, color: "#4A2616", textDecoration: "underline", padding: "8px 0" }}
+            >
+              Change
+            </button>
+          </div>
+        )}
+
+        {step === 1 && (
+          <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
+            {drop.packages.map((p) => {
+              const on = p.kind === pkg;
+              const dis = !p.available;
+              return (
                 <button
                   key={p.kind}
-                  disabled={!p.available}
+                  disabled={dis}
                   onClick={() => {
                     changeOrder(p.kind);
                     setStep(2);
                   }}
-                  className={`flex items-center justify-between border px-5 py-4 text-left transition-colors ${
-                    p.kind === pkg ? "border-brown bg-cream-sunk" : "border-brown/20"
-                  } ${p.available ? "hover:border-brown" : "cursor-not-allowed opacity-50"}`}
+                  className={dis ? "cursor-not-allowed" : "cursor-pointer"}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    minHeight: 68,
+                    padding: "0 18px",
+                    border: `1px solid ${on ? "#24150D" : "rgba(74,38,22,.25)"}`,
+                    background: on ? "#F2EBDF" : "#FFFFFF",
+                    color: "#24150D",
+                    opacity: dis ? 0.45 : 1,
+                    textAlign: "left",
+                  }}
                 >
                   <span>
-                    <span className="eyebrow block text-ink">{p.title}</span>
-                    <span className="mt-1 block text-xs tracking-[0.15em] text-muted-2">
-                      {p.sub.toUpperCase()}
-                      {!p.available && " · NOT ENOUGH LEFT"}
+                    <span style={{ display: "block", fontSize: 12, letterSpacing: ".16em", fontWeight: 500 }}>
+                      {p.title}
+                    </span>
+                    <span style={{ display: "block", fontSize: 13, color: "#5A4334", marginTop: 3 }}>
+                      {p.sub}
+                      {dis ? " · NOT ENOUGH LEFT" : ""}
                     </span>
                   </span>
-                  <span className="font-display text-2xl text-ink">
+                  <span className="font-display" style={{ fontSize: 24 }}>
                     {formatMoney(p.priceCents)}
                   </span>
                 </button>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </div>
+        )}
 
-          {step === 2 && (
-            <div className="flex flex-col gap-4">
-              <div>
-                <label htmlFor="co-name" className={labelCls}>
-                  Name
-                </label>
-                <input
-                  id="co-name"
-                  className={inputCls}
-                  autoComplete="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </div>
-              <div>
-                <label htmlFor="co-phone" className={labelCls}>
-                  Phone
-                </label>
-                <input
-                  id="co-phone"
-                  type="tel"
-                  className={inputCls}
-                  autoComplete="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
-              </div>
-              <div>
-                <label htmlFor="co-email" className={labelCls}>
-                  Email
-                </label>
-                <input
-                  id="co-email"
-                  type="email"
-                  className={inputCls}
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              {/* honeypot */}
-              <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
-                <label htmlFor="co-website">Website</label>
-                <input
-                  id="co-website"
-                  tabIndex={-1}
-                  autoComplete="off"
-                  value={website}
-                  onChange={(e) => setWebsite(e.target.value)}
-                />
-              </div>
+        {step === 2 && (
+          <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 14 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6, ...LABEL }}>
+              NAME
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                autoComplete="name"
+                placeholder="Your name"
+                style={INPUT}
+              />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6, ...LABEL }}>
+              PHONE
+              <input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                type="tel"
+                autoComplete="tel"
+                placeholder="(555) 555-0100"
+                style={INPUT}
+              />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6, ...LABEL }}>
+              EMAIL
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                type="email"
+                autoComplete="email"
+                placeholder="you@email.com"
+                style={INPUT}
+              />
+            </label>
+            {/* honeypot */}
+            <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
+              <label htmlFor="co-website">Website</label>
+              <input
+                id="co-website"
+                tabIndex={-1}
+                autoComplete="off"
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+              />
             </div>
-          )}
+          </div>
+        )}
 
-          {step === 3 && (
-            <div className="text-left">
-              <div className="border border-brown/20 bg-cream-sunk px-5 py-4">
-                <span className={labelCls}>Pickup date</span>
-                <span className="font-display text-xl text-ink">{drop.pickupDateLabel}</span>
-                <span className="eyebrow mt-1 block text-muted-2" style={{ fontSize: "9px" }}>
-                  This week&apos;s bake
+        {step === 3 && (
+          <div style={{ marginTop: 20 }}>
+            <div style={LABEL}>PICKUP DATE</div>
+            <div
+              style={{
+                marginTop: 8,
+                padding: "16px 18px",
+                border: "1px solid #4A2616",
+                background: "#F5EFE4",
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "6px 12px",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <span className="font-display" style={{ fontSize: 20 }}>
+                {drop.pickupDateLabel}
+              </span>
+              <span style={{ fontSize: 10, letterSpacing: ".2em", color: "#8A6440" }}>
+                THIS WEEK&apos;S BAKE
+              </span>
+            </div>
+            <div style={{ marginTop: 20, ...LABEL }}>AVAILABLE PICKUP WINDOW</div>
+            <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {drop.windows.map((w) => {
+                const on = w.id === windowId;
+                return (
+                  <button
+                    key={w.id}
+                    disabled={w.full}
+                    onClick={() => changeOrder(undefined, w.id)}
+                    className={w.full ? "cursor-not-allowed" : "cursor-pointer"}
+                    style={{
+                      minHeight: 62,
+                      border: `1px solid ${on ? "#24150D" : "rgba(74,38,22,.25)"}`,
+                      background: on ? "#24150D" : "#FFFFFF",
+                      color: on ? "#F5EFE4" : "#24150D",
+                      fontSize: 14,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 2,
+                      opacity: w.full ? 0.45 : 1,
+                    }}
+                  >
+                    <span>{w.label}</span>
+                    <span style={{ fontSize: 9, letterSpacing: ".2em" }}>
+                      {w.full ? "FULL" : on ? "SELECTED" : ""}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {step === 4 && selected && (
+          <div style={{ marginTop: 20 }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+                fontSize: 14,
+                paddingBottom: 18,
+                borderBottom: "1px solid rgba(74,38,22,.15)",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "#5A4334" }}>Pickup</span>
+                <span>
+                  {shortDate} · {selectedWindow?.label}
                 </span>
               </div>
-              <span className={`${labelCls} mt-6`}>Available pickup window</span>
-              <div className="grid grid-cols-2 gap-3">
-                {drop.windows.map((w) => {
-                  const isSel = w.id === windowId;
-                  return (
-                    <button
-                      key={w.id}
-                      disabled={w.full}
-                      onClick={() => changeOrder(undefined, w.id)}
-                      className={`border px-4 py-3.5 text-center transition-colors ${
-                        isSel
-                          ? "border-brown bg-ink text-cream"
-                          : w.full
-                            ? "cursor-not-allowed border-brown/10 text-muted-2 opacity-60"
-                            : "border-brown/25 text-ink hover:border-brown"
-                      }`}
-                    >
-                      <span className="block text-sm">{w.label}</span>
-                      <span className="eyebrow mt-1 block" style={{ fontSize: "8px" }}>
-                        {w.full ? "Full" : isSel ? "Selected" : " "}
-                      </span>
-                    </button>
-                  );
-                })}
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "#5A4334" }}>Name</span>
+                <span>{name}</span>
+              </div>
+              <div
+                className="font-display"
+                style={{ display: "flex", justifyContent: "space-between", fontSize: 22, marginTop: 4 }}
+              >
+                <span>Total</span>
+                <span>{formatMoney(selected.priceCents)}</span>
               </div>
             </div>
-          )}
 
-          {step === 4 && selected && (
-            <div className="text-left">
-              <div className="flex flex-col gap-2 border-b border-brown/15 pb-4 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted">Pickup</span>
-                  <span className="text-ink">
-                    {drop.pickupDateLabel} · {selectedWindow?.label}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted">Name</span>
-                  <span className="text-ink">{name}</span>
-                </div>
-                <div className="flex justify-between font-medium">
-                  <span className="text-ink">Total</span>
-                  <span className="font-display text-xl text-ink">
-                    {formatMoney(selected.priceCents)}
-                  </span>
-                </div>
-              </div>
+            <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {(["card", "wallet"] as const).map((m) => {
+                const on = payTab === m;
+                return (
+                  <button
+                    key={m}
+                    onClick={() => setPayTab(m)}
+                    className="cursor-pointer"
+                    style={{
+                      height: 50,
+                      border: `1px solid ${on ? "#24150D" : "rgba(74,38,22,.25)"}`,
+                      background: on ? "#24150D" : "#FFFFFF",
+                      color: on ? "#F5EFE4" : "#24150D",
+                      fontSize: 12,
+                      letterSpacing: ".16em",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {m === "card" ? "CARD" : "WALLET"}
+                  </button>
+                );
+              })}
+            </div>
 
-              {square.error && <p className="mt-4 text-sm text-error">{square.error}</p>}
+            {square.error && (
+              <div style={{ marginTop: 14, fontSize: 13, color: "#8A3B1E" }}>{square.error}</div>
+            )}
 
-              <div className="mt-5">
-                <span className={labelCls}>Card</span>
+            <div style={{ display: payTab === "card" ? "block" : "none" }}>
+              <div
+                style={{
+                  marginTop: 12,
+                  border: "1px solid rgba(74,38,22,.3)",
+                  borderRadius: 10,
+                  background: "#FFFFFF",
+                  padding: "12px 14px 2px",
+                }}
+              >
                 <div id="card-container" />
                 {!square.ready && !square.error && (
-                  <p className="py-3 text-sm text-muted-2">Loading secure card field…</p>
+                  <p style={{ padding: "4px 0 14px", fontSize: 13, color: "#6E5546" }}>
+                    Loading secure card field…
+                  </p>
                 )}
               </div>
-
               <button
                 onClick={() => pay("card")}
                 disabled={!square.ready || processing}
-                className="eyebrow mt-5 w-full bg-ink px-6 py-4 text-cream transition-all duration-300 hover:tracking-[0.42em] disabled:opacity-60"
+                className="cursor-pointer border-0 disabled:opacity-60"
+                style={{
+                  marginTop: 18,
+                  width: "100%",
+                  height: 58,
+                  background: "#24150D",
+                  color: "#F5EFE4",
+                  fontSize: 13,
+                  letterSpacing: ".22em",
+                  fontWeight: 500,
+                }}
               >
-                {processing ? "Processing…" : `Pay ${formatMoney(selected.priceCents)}`}
+                {processing ? "PROCESSING…" : `PAY ${formatMoney(selected.priceCents)}`}
               </button>
+            </div>
 
-              {square.wallets.length > 0 && (
-                <div className="mt-4 flex flex-col gap-3">
-                  <span className="eyebrow block text-center text-muted-2" style={{ fontSize: "9px" }}>
-                    or pay with
-                  </span>
-                  <div id="google-pay-button" className={square.wallets.includes("googlePay") ? "" : "hidden"} />
-                  {square.wallets.includes("applePay") && (
-                    <button
-                      onClick={() => pay("applePay")}
-                      disabled={processing}
-                      className="h-12 w-full rounded-md bg-black text-cream"
-                      style={{ WebkitAppearance: "-apple-pay-button" as never }}
-                      aria-label="Pay with Apple Pay"
-                    />
-                  )}
+            <div style={{ display: payTab === "wallet" ? "block" : "none", marginTop: 12 }}>
+              <div id="google-pay-button" style={{ display: square.wallets.includes("googlePay") ? "block" : "none" }} />
+              {square.wallets.includes("applePay") && (
+                <button
+                  onClick={() => pay("applePay")}
+                  disabled={processing}
+                  aria-label="Pay with Apple Pay"
+                  className="cursor-pointer border-0"
+                  style={{
+                    marginTop: 10,
+                    width: "100%",
+                    height: 50,
+                    borderRadius: 6,
+                    background: "#000",
+                    color: "#fff",
+                    WebkitAppearance: "-apple-pay-button" as never,
+                  }}
+                />
+              )}
+              {square.wallets.length === 0 && (
+                <div style={{ padding: "16px 4px", fontSize: 13, color: "#6E5546", textAlign: "center" }}>
+                  Apple Pay and Google Pay appear here on supported devices. Use the card tab instead.
                 </div>
               )}
-
-              <p className="eyebrow mt-5 text-center text-muted-2" style={{ fontSize: "8.5px" }}>
-                Secure payment by Square
-                {process.env.NEXT_PUBLIC_SQUARE_ENVIRONMENT !== "production" &&
-                  " · Sandbox mode — test cards only"}
-              </p>
             </div>
-          )}
 
-          {step === 5 && confirmation && selected && (
-            <div className="flex flex-col items-center pb-2 text-center">
-              <Image src="/logo.png" alt="" width={92} height={92} />
-              <h2 className="mt-5 font-display text-3xl font-medium text-ink">
-                YOUR MANNA IS RESERVED.
-              </h2>
-              <div className="mt-7 w-full max-w-xs text-sm">
-                {[
-                  ["Order", `${selected.name} · ${drop.cookie}`],
-                  ["Pickup date", drop.pickupDateLabel],
-                  ["Pickup window", selectedWindow?.label ?? ""],
-                  ["Order number", confirmation.orderNumber],
-                ].map(([k, v]) => (
-                  <div key={k} className="flex justify-between gap-6 border-b border-brown/10 py-2.5">
-                    <span className="flex-none text-muted">{k}</span>
-                    <span className="text-right font-medium text-ink">{v}</span>
-                  </div>
-                ))}
-              </div>
-              <button
-                onClick={addToCalendar}
-                className="eyebrow mt-7 w-full border border-brown/30 px-6 py-4 text-brown transition-colors hover:border-brown"
-              >
-                Add Pickup to Calendar
-              </button>
-              <button
-                onClick={onClose}
-                className="eyebrow mt-3 w-full bg-ink px-6 py-4 text-cream transition-all duration-300 hover:tracking-[0.42em]"
-              >
-                Done
-              </button>
+            <div style={{ marginTop: 10, textAlign: "center", fontSize: 12, color: "#6E5546" }}>
+              Secure payment by Square
+              {process.env.NEXT_PUBLIC_SQUARE_ENVIRONMENT !== "production" &&
+                " · Sandbox mode — test cards only"}
             </div>
-          )}
+          </div>
+        )}
 
-          {err && step !== 5 && <p className="mt-4 text-sm text-error">{err}</p>}
-
-          {step >= 1 && step <= 3 && (
-            <div className="mt-6 flex gap-3">
-              {step >= 2 && (
-                <button
-                  onClick={back}
-                  className="eyebrow flex-1 border border-brown/30 px-6 py-4 text-brown transition-colors hover:border-brown"
+        {step === 5 && confirmation && selected && (
+          <div style={{ marginTop: 8, textAlign: "center", animation: "mannaIn .6s ease" }}>
+            <Image src="/logo.png" alt="" width={92} height={92} style={{ marginTop: 8, display: "inline-block" }} />
+            <div
+              className="font-display"
+              style={{ marginTop: 16, fontSize: "clamp(28px,7vw,36px)", lineHeight: 1.1, letterSpacing: ".04em" }}
+            >
+              YOUR MANNA
+              <br />
+              IS RESERVED.
+            </div>
+            <div
+              style={{
+                marginTop: 26,
+                display: "flex",
+                flexDirection: "column",
+                textAlign: "left",
+                borderTop: "1px solid rgba(74,38,22,.15)",
+              }}
+            >
+              {[
+                ["Order", `${selected.name} · ${selected.count} cookies`],
+                ["Pickup date", drop.pickupDateLabel],
+                ["Pickup window", selectedWindow?.label ?? ""],
+                ["Order number", confirmation.orderNumber],
+              ].map(([k, v], i) => (
+                <div
+                  key={k}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    padding: "14px 0",
+                    borderBottom: "1px solid rgba(74,38,22,.15)",
+                    fontSize: 14,
+                  }}
                 >
-                  Back
-                </button>
-              )}
-              <button
-                onClick={next}
-                className="eyebrow flex-1 bg-ink px-6 py-4 text-cream transition-all duration-300 hover:tracking-[0.42em]"
-              >
-                Continue
-              </button>
+                  <span style={{ color: "#5A4334", flex: "none" }}>{k}</span>
+                  <span style={i === 3 ? { fontWeight: 500, letterSpacing: ".08em" } : { textAlign: "right" }}>
+                    {v}
+                  </span>
+                </div>
+              ))}
             </div>
-          )}
-          {step === 4 && (
-            <button onClick={back} className="eyebrow mt-3 w-full py-2 text-muted-2 hover:text-brown">
-              Back
+            <button
+              onClick={addToCalendar}
+              className="cursor-pointer"
+              style={{
+                marginTop: 22,
+                width: "100%",
+                height: 54,
+                border: "1px solid #24150D",
+                background: "transparent",
+                color: "#24150D",
+                fontSize: 12,
+                letterSpacing: ".2em",
+                fontWeight: 500,
+              }}
+            >
+              ADD PICKUP TO CALENDAR
             </button>
-          )}
-        </div>
+            <button
+              onClick={onClose}
+              className="cursor-pointer border-0"
+              style={{
+                marginTop: 8,
+                width: "100%",
+                height: 54,
+                background: "#24150D",
+                color: "#F5EFE4",
+                fontSize: 12,
+                letterSpacing: ".2em",
+                fontWeight: 500,
+              }}
+            >
+              DONE
+            </button>
+          </div>
+        )}
+
+        {err && step !== 5 && <div style={{ marginTop: 14, fontSize: 13, color: "#8A3B1E" }}>{err}</div>}
+
+        {step >= 1 && step <= 3 && (
+          <div style={{ marginTop: 24, display: "flex", gap: 10 }}>
+            {step >= 2 && (
+              <button
+                onClick={back}
+                className="cursor-pointer"
+                style={{
+                  flex: "0 0 auto",
+                  height: 56,
+                  padding: "0 22px",
+                  border: "1px solid rgba(74,38,22,.35)",
+                  background: "transparent",
+                  color: "#24150D",
+                  fontSize: 12,
+                  letterSpacing: ".2em",
+                  fontWeight: 500,
+                }}
+              >
+                BACK
+              </button>
+            )}
+            <button
+              onClick={next}
+              className="cursor-pointer border-0"
+              style={{
+                flex: 1,
+                height: 56,
+                background: "#24150D",
+                color: "#F5EFE4",
+                fontSize: 12,
+                letterSpacing: ".22em",
+                fontWeight: 500,
+              }}
+            >
+              CONTINUE
+            </button>
+          </div>
+        )}
+        {step === 4 && (
+          <button
+            onClick={back}
+            className="mt-3 w-full cursor-pointer border-0 bg-transparent py-2"
+            style={{ fontSize: 11, letterSpacing: ".2em", color: "#8A7466" }}
+          >
+            BACK
+          </button>
+        )}
       </div>
     </div>
   );

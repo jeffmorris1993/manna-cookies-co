@@ -37,8 +37,8 @@ export default async function OrdersPage({
   }
 
   return (
-    <main className="pt-8">
-      <h1 className="font-display text-4xl font-medium text-ink">Orders</h1>
+    <main style={{ padding: "12px 0" }}>
+      <h1 className="font-display" style={{ fontSize: 30, lineHeight: 1.1 }}>Orders</h1>
       <OrdersList orders={orders} initialFilter={filter ?? "all"} />
     </main>
   );

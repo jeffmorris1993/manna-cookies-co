@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { saveDrop, makeLive, createNextDrop } from "@/app/dashboard/actions";
-import { formatMoney, shortDate } from "@/lib/format";
+import { formatMoney, parseISODate } from "@/lib/format";
 import { PACKAGE_META, type PackageKind } from "@/lib/types";
 import { useToast } from "./Toast";
 
@@ -36,6 +36,68 @@ const NOTE: Record<EditorDrop["status"], string | null> = {
     "This drop is complete. Its settings are kept for your records and can be reused for a future drop.",
 };
 
+const FIELD_INPUT: React.CSSProperties = {
+  height: 44,
+  border: "1px solid rgba(74,38,22,.2)",
+  borderRadius: 10,
+  background: "#FFFFFF",
+  padding: "0 10px",
+  fontSize: 16,
+  color: "#24150D",
+  outline: "none",
+};
+const SECTION_LABEL: React.CSSProperties = {
+  fontSize: 11,
+  letterSpacing: ".2em",
+  fontWeight: 500,
+  color: "#6E5546",
+};
+const ROW: React.CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: "8px 12px",
+  padding: "10px 0",
+  minHeight: 64,
+  borderBottom: "1px solid rgba(74,38,22,.1)",
+};
+
+function Toggle({ on, onClick, disabled }: { on: boolean; onClick: () => void; disabled?: boolean }) {
+  return (
+    <button
+      role="switch"
+      aria-checked={on}
+      disabled={disabled}
+      onClick={onClick}
+      className="cursor-pointer border-0 disabled:opacity-60"
+      style={{
+        flex: "0 0 auto",
+        width: 52,
+        height: 32,
+        borderRadius: 16,
+        background: on ? "#4A2616" : "#D9CBB6",
+        position: "relative",
+        transition: "background .3s",
+      }}
+    >
+      <span
+        style={{
+          position: "absolute",
+          top: 3,
+          left: on ? 23 : 3,
+          width: 26,
+          height: 26,
+          borderRadius: "50%",
+          background: "#FFFFFF",
+          transition: "left .3s",
+          boxShadow: "0 1px 3px rgba(0,0,0,.2)",
+        }}
+      />
+    </button>
+  );
+}
+
 export default function DropEditor({
   drop,
   packages,
@@ -60,22 +122,23 @@ export default function DropEditor({
   const remaining = Math.max(0, capacity - drop.reserved);
   const pct = capacity ? Math.min(100, Math.round((drop.reserved / capacity) * 100)) : 0;
   const capMin = Math.max(12, Math.ceil(drop.reserved / 6) * 6 || 12);
+  const dateLong = parseISODate(pickupDate).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
 
   const addWindow = () => {
-    const last = wins[wins.length - 1];
-    let startH = 9;
-    if (last) startH = Math.min(21, Number(last.ends.slice(0, 2)) ?? 9);
-    const endH = Math.min(21, startH + 2);
-    if (startH >= 21) {
-      toast("No room for another window before 9 PM");
-      return;
-    }
+    const sortedWins = [...wins].sort((a, b) => a.starts.localeCompare(b.starts));
+    const last = sortedWins[sortedWins.length - 1];
+    let h = last ? Number(last.ends.slice(0, 2)) : 9;
+    h = Math.min(h, 21);
     setWins([
       ...wins,
       {
         id: null,
-        starts: `${String(startH).padStart(2, "0")}:00`,
-        ends: `${String(endH).padStart(2, "0")}:00`,
+        starts: `${String(h).padStart(2, "0")}:00`,
+        ends: `${String(Math.min(23, h + 2)).padStart(2, "0")}:00`,
         full: false,
       },
     ]);
@@ -107,10 +170,10 @@ export default function DropEditor({
       }
       if (then === "makeLive") {
         const liveRes = await makeLive(drop.id);
-        toast(liveRes.ok ? "This drop is now live" : (liveRes.error ?? "Couldn't make live"));
+        toast(liveRes.ok ? "Now live on the website" : (liveRes.error ?? "Couldn't make live"));
         if (liveRes.ok) router.refresh();
       } else {
-        toast(drop.status === "live" ? "Drop saved · live on the website" : "Drop saved");
+        toast(drop.status === "live" ? "Drop saved · live on the website" : "Next drop saved");
         router.refresh();
       }
     });
@@ -119,300 +182,357 @@ export default function DropEditor({
     start(async () => {
       const res = await createNextDrop(drop.id);
       if (res.ok && res.id) {
-        toast("New drop created from this one");
+        toast("Next drop created · not live yet");
         router.push(`/dashboard/drops/${res.id}`);
       } else toast(res.error ?? "Couldn't create drop");
     });
 
-  const inputCls =
-    "w-full border border-brown/20 bg-cream px-4 py-3 text-[15px] text-ink outline-none transition-colors focus:border-brown disabled:opacity-60";
+  const actions: { label: string; bg: string; color: string; onClick: () => void }[] =
+    drop.status === "live"
+      ? [
+          { label: "SAVE DROP", bg: "#24150D", color: "#F5EFE4", onClick: () => save() },
+          { label: "CREATE NEXT DROP", bg: "transparent", color: "#24150D", onClick: reuse },
+        ]
+      : drop.status === "scheduled"
+        ? [
+            { label: "SAVE DROP", bg: "#24150D", color: "#F5EFE4", onClick: () => save() },
+            { label: "MAKE THIS THE LIVE DROP", bg: "transparent", color: "#24150D", onClick: () => save("makeLive") },
+          ]
+        : [{ label: "REUSE AS NEXT DROP", bg: "#24150D", color: "#F5EFE4", onClick: reuse }];
 
   return (
-    <main className="pt-8">
-      <Link href="/dashboard/drops" className="eyebrow text-muted-2 hover:text-brown">
+    <main
+      style={{ padding: "12px 0", display: "flex", flexDirection: "column", gap: 14, animation: "mannaIn .35s ease" }}
+    >
+      <Link
+        href="/dashboard/drops"
+        style={{ fontSize: 14, color: "#4A2616", padding: "4px 0" }}
+      >
         ← All drops
       </Link>
-      <h1 className="mt-3 font-display text-4xl font-medium text-ink">Edit Drop</h1>
 
-      {/* summary */}
-      <div className="mt-6 bg-ink px-6 py-6 text-cream">
-        <span className="eyebrow text-gold" style={{ fontSize: "9px" }}>
-          {LONG_STATUS[drop.status]}
-        </span>
-        <p className="mt-2 font-display text-2xl">{cookie || "Untitled cookie"}</p>
-        <p className="mt-1 text-sm text-cream-dark-muted">{shortDate(pickupDate)}</p>
-        <div className="mt-5 grid grid-cols-3 gap-3 text-center">
-          <div>
-            <div className="font-display text-2xl">{capacity}</div>
-            <div className="eyebrow mt-1 text-cream-dark-muted" style={{ fontSize: "7.5px" }}>
-              Total Capacity
-            </div>
+      {/* dark summary */}
+      <div style={{ background: "#24150D", color: "#F5EFE4", borderRadius: 16, padding: 20 }}>
+        <div
+          style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}
+        >
+          <div style={{ fontSize: 11, letterSpacing: ".2em", fontWeight: 500, color: "#C9A57E" }}>
+            {LONG_STATUS[drop.status]}
           </div>
-          <div>
-            <div className="font-display text-2xl">{drop.reserved}</div>
-            <div className="eyebrow mt-1 text-cream-dark-muted" style={{ fontSize: "7.5px" }}>
-              {drop.status === "complete" ? "Sold" : "Reserved"}
-            </div>
-          </div>
-          <div>
-            <div className="font-display text-2xl">{remaining}</div>
-            <div className="eyebrow mt-1 text-cream-dark-muted" style={{ fontSize: "7.5px" }}>
-              Remaining
-            </div>
-          </div>
+          <div style={{ fontSize: 12, color: "#D9C8B3" }}>{dateLong}</div>
         </div>
-        <div className="mt-4 h-1.5 w-full overflow-hidden rounded bg-cream/10">
-          <div className="h-full rounded bg-gold" style={{ width: `${pct}%` }} />
+        <div className="font-display" style={{ marginTop: 8, fontSize: 26, lineHeight: 1.2 }}>
+          {cookie || "Untitled cookie"}
         </div>
-        <p className="mt-3 text-xs text-cream-dark-muted">{formatMoney(drop.revenue)} collected</p>
+        <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
+          {(
+            [
+              ["TOTAL CAPACITY", capacity],
+              [drop.status === "complete" ? "SOLD" : "RESERVED", drop.reserved],
+              ["REMAINING", remaining],
+            ] as const
+          ).map(([l, v]) => (
+            <div key={l}>
+              <div style={{ fontSize: 10, letterSpacing: ".14em", color: "#D9C8B3" }}>{l}</div>
+              <div className="font-display" style={{ marginTop: 4, fontSize: 30 }}>
+                {v}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div
+          style={{ marginTop: 14, height: 6, borderRadius: 3, background: "rgba(245,239,228,.15)", overflow: "hidden" }}
+        >
+          <div style={{ height: "100%", width: `${pct}%`, background: "#C9A57E", transition: "width .6s ease" }} />
+        </div>
+        <div style={{ marginTop: 10, fontSize: 12, color: "#D9C8B3" }}>
+          {formatMoney(drop.revenue)} collected
+        </div>
       </div>
 
       {NOTE[drop.status] && (
-        <p className="mt-4 bg-tan-soft px-5 py-4 text-sm leading-relaxed text-ink">
+        <div
+          style={{
+            background: "#EADCC6",
+            borderRadius: 14,
+            padding: "14px 16px",
+            fontSize: 14,
+            lineHeight: 1.5,
+            color: "#4A2616",
+          }}
+        >
           {NOTE[drop.status]}
-        </p>
+        </div>
       )}
 
       {/* details */}
-      <section className="mt-4 border border-brown/10 bg-cream-raised px-5 py-5">
-        <h2 className="eyebrow text-muted-2">Details</h2>
-        <div className="mt-4 flex flex-col gap-4">
-          <div>
-            <label className="eyebrow mb-2 block text-muted-2" style={{ fontSize: "8.5px" }} htmlFor="d-cookie">
-              Cookie
-            </label>
-            <input
-              id="d-cookie"
-              className={`${inputCls} font-display text-lg`}
-              value={cookie}
-              disabled={readOnly}
-              onChange={(e) => setCookie(e.target.value)}
-            />
+      <div style={{ background: "#FBF8F1", borderRadius: 16, padding: "16px 18px 6px" }}>
+        <div style={SECTION_LABEL}>COOKIE</div>
+        <input
+          value={cookie}
+          disabled={readOnly}
+          onChange={(e) => setCookie(e.target.value)}
+          placeholder="Cookie name"
+          className="font-display disabled:opacity-60"
+          style={{ ...FIELD_INPUT, marginTop: 8, width: "100%", fontSize: 18 }}
+        />
+        <div style={{ marginTop: 16, ...SECTION_LABEL }}>DESCRIPTION</div>
+        <textarea
+          value={description}
+          disabled={readOnly}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={2}
+          className="disabled:opacity-60"
+          style={{
+            marginTop: 8,
+            width: "100%",
+            border: "1px solid rgba(74,38,22,.2)",
+            borderRadius: 10,
+            background: "#FFFFFF",
+            padding: 12,
+            fontSize: 16,
+            color: "#24150D",
+            resize: "vertical",
+            outline: "none",
+          }}
+        />
+        <div style={{ height: 8, borderBottom: "1px solid rgba(74,38,22,.1)" }} />
+        {drop.status === "live" && (
+          <div style={ROW}>
+            <span style={{ fontWeight: 500 }}>Orders open</span>
+            <Toggle on={isOpen} onClick={() => setIsOpen(!isOpen)} />
           </div>
-          <div>
-            <label className="eyebrow mb-2 block text-muted-2" style={{ fontSize: "8.5px" }} htmlFor="d-desc">
-              Description
-            </label>
-            <textarea
-              id="d-desc"
-              rows={2}
-              className={inputCls}
-              value={description}
-              disabled={readOnly}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-          {drop.status === "live" && (
-            <div className="flex items-center justify-between">
-              <span className="eyebrow text-muted-2" style={{ fontSize: "8.5px" }}>
-                Orders open
-              </span>
-              <button
-                role="switch"
-                aria-checked={isOpen}
-                onClick={() => setIsOpen(!isOpen)}
-                className="relative h-7 w-12 rounded-full transition-colors"
-                style={{ background: isOpen ? "#4A2616" : "#D9CBB6" }}
-              >
-                <span
-                  className="absolute top-0.5 h-6 w-6 rounded-full bg-cream transition-transform"
-                  style={{ transform: isOpen ? "translateX(22px)" : "translateX(2px)", left: 0 }}
-                />
-              </button>
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="eyebrow mb-2 block text-muted-2" style={{ fontSize: "8.5px" }} htmlFor="d-date">
-                Pickup date
-              </label>
-              <input
-                id="d-date"
-                type="date"
-                className={inputCls}
-                value={pickupDate}
-                disabled={readOnly}
-                onChange={(e) => setPickupDate(e.target.value)}
-              />
-            </div>
-            <div>
-              <span className="eyebrow mb-2 block text-muted-2" style={{ fontSize: "8.5px" }}>
-                Maximum cookies
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  disabled={readOnly || capacity <= capMin}
-                  onClick={() => setCapacity(Math.max(capMin, capacity - 6))}
-                  className="h-11 w-11 border border-brown/20 text-lg text-brown disabled:opacity-40"
-                  aria-label="Decrease capacity"
-                >
-                  −
-                </button>
-                <span className="flex-1 text-center font-display text-xl text-ink">{capacity}</span>
-                <button
-                  disabled={readOnly || capacity >= 480}
-                  onClick={() => setCapacity(Math.min(480, capacity + 6))}
-                  className="h-11 w-11 border border-brown/20 text-lg text-brown disabled:opacity-40"
-                  aria-label="Increase capacity"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-          </div>
-          <p className="text-xs text-muted-2">
-            Ordering closes automatically 2 days before pickup at 8:00 PM.
-          </p>
+        )}
+        <label style={ROW}>
+          <span style={{ fontWeight: 500 }}>Pickup date</span>
+          <input
+            type="date"
+            value={pickupDate}
+            disabled={readOnly}
+            onChange={(e) => e.target.value && setPickupDate(e.target.value)}
+            className="disabled:opacity-60"
+            style={{ ...FIELD_INPUT, flex: "0 1 190px", minWidth: 0 }}
+          />
+        </label>
+        <div style={ROW}>
+          <span style={{ fontWeight: 500 }}>Ordering deadline</span>
+          <span style={{ fontSize: 14, color: "#6E5546" }}>
+            2 days before pickup · 8:00 PM
+          </span>
         </div>
-      </section>
+        <div style={{ ...ROW, borderBottom: 0 }}>
+          <span style={{ fontWeight: 500 }}>Maximum cookies</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <button
+              disabled={readOnly || capacity <= capMin}
+              onClick={() => setCapacity(Math.max(capMin, capacity - 6))}
+              aria-label="Decrease capacity"
+              className="cursor-pointer disabled:opacity-40"
+              style={{
+                width: 44, height: 44, borderRadius: 10,
+                border: "1px solid rgba(74,38,22,.25)", background: "#FFFFFF", fontSize: 20, color: "#24150D",
+              }}
+            >
+              −
+            </button>
+            <span className="font-display" style={{ minWidth: 52, textAlign: "center", fontSize: 24 }}>
+              {capacity}
+            </span>
+            <button
+              disabled={readOnly || capacity >= 480}
+              onClick={() => setCapacity(Math.min(480, capacity + 6))}
+              aria-label="Increase capacity"
+              className="cursor-pointer disabled:opacity-40"
+              style={{
+                width: 44, height: 44, borderRadius: 10,
+                border: "1px solid rgba(74,38,22,.25)", background: "#FFFFFF", fontSize: 20, color: "#24150D",
+              }}
+            >
+              +
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* pickup windows */}
-      <section className="mt-4 border border-brown/10 bg-cream-raised px-5 py-5">
-        <h2 className="eyebrow text-muted-2">Pickup Windows</h2>
-        <p className="mt-2 text-xs leading-relaxed text-muted">
+      <div style={{ background: "#FBF8F1", borderRadius: 16, padding: "16px 18px" }}>
+        <div style={SECTION_LABEL}>PICKUP WINDOWS</div>
+        <div style={{ marginTop: 4, fontSize: 13, lineHeight: 1.5, color: "#6E5546" }}>
           Customers choose one at checkout. Mark a window full to stop new orders for it.
-        </p>
-        <div className="mt-4 flex flex-col gap-3">
+        </div>
+        <div style={{ marginTop: 10, display: "flex", flexDirection: "column" }}>
           {wins.map((w, i) => (
-            <div key={w.id ?? `new-${i}`} className="flex items-center gap-2">
-              <input
-                type="time"
-                value={w.starts}
-                disabled={readOnly}
-                onChange={(e) =>
-                  setWins(wins.map((x, j) => (j === i ? { ...x, starts: e.target.value } : x)))
-                }
-                className="flex-1 border border-brown/20 bg-cream px-2 py-2.5 text-sm text-ink outline-none focus:border-brown disabled:opacity-60"
-              />
-              <span className="text-muted-2">–</span>
-              <input
-                type="time"
-                value={w.ends}
-                disabled={readOnly}
-                onChange={(e) =>
-                  setWins(wins.map((x, j) => (j === i ? { ...x, ends: e.target.value } : x)))
-                }
-                className="flex-1 border border-brown/20 bg-cream px-2 py-2.5 text-sm text-ink outline-none focus:border-brown disabled:opacity-60"
-              />
-              <button
-                disabled={readOnly}
-                onClick={() => setWins(wins.map((x, j) => (j === i ? { ...x, full: !x.full } : x)))}
-                className={`eyebrow flex-none rounded-full px-3 py-2 ${
-                  w.full ? "bg-brown text-cream" : "border border-brown/25 text-muted"
-                } disabled:opacity-60`}
-                style={{ fontSize: "8px" }}
-              >
-                {w.full ? "Full" : "Open"}
-              </button>
-              <button
-                disabled={readOnly}
-                onClick={() => removeWindow(i)}
-                aria-label="Remove window"
-                className="flex-none px-2 text-lg text-muted-2 hover:text-error disabled:opacity-40"
-              >
-                ×
-              </button>
+            <div
+              key={w.id ?? `new-${i}`}
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                gap: 8,
+                padding: "10px 0",
+                borderBottom: "1px solid rgba(74,38,22,.1)",
+              }}
+            >
+              <div style={{ flex: "1 1 220px", display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                <input
+                  type="time"
+                  value={w.starts}
+                  disabled={readOnly}
+                  onChange={(e) =>
+                    setWins(wins.map((x, j) => (j === i ? { ...x, starts: e.target.value } : x)))
+                  }
+                  className="disabled:opacity-60"
+                  style={{ ...FIELD_INPUT, flex: 1, minWidth: 0 }}
+                />
+                <span style={{ color: "#6E5546" }}>–</span>
+                <input
+                  type="time"
+                  value={w.ends}
+                  disabled={readOnly}
+                  onChange={(e) =>
+                    setWins(wins.map((x, j) => (j === i ? { ...x, ends: e.target.value } : x)))
+                  }
+                  className="disabled:opacity-60"
+                  style={{ ...FIELD_INPUT, flex: 1, minWidth: 0 }}
+                />
+              </div>
+              <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
+                <button
+                  disabled={readOnly}
+                  onClick={() => setWins(wins.map((x, j) => (j === i ? { ...x, full: !x.full } : x)))}
+                  className="cursor-pointer disabled:opacity-60"
+                  style={{
+                    height: 44,
+                    minWidth: 76,
+                    padding: "0 12px",
+                    borderRadius: 10,
+                    border: `1px solid ${w.full ? "#24150D" : "rgba(74,38,22,.25)"}`,
+                    background: w.full ? "#24150D" : "#FFFFFF",
+                    color: w.full ? "#F5EFE4" : "#24150D",
+                    fontSize: 11,
+                    letterSpacing: ".14em",
+                    fontWeight: 600,
+                  }}
+                >
+                  {w.full ? "FULL" : "OPEN"}
+                </button>
+                <button
+                  disabled={readOnly}
+                  onClick={() => removeWindow(i)}
+                  aria-label="Remove window"
+                  className="cursor-pointer disabled:opacity-40"
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 10,
+                    border: "1px solid rgba(74,38,22,.2)",
+                    background: "#FFFFFF",
+                    color: "#4A2616",
+                    fontSize: 20,
+                  }}
+                >
+                  ×
+                </button>
+              </div>
             </div>
           ))}
         </div>
         {!readOnly && (
           <button
             onClick={addWindow}
-            className="eyebrow mt-4 w-full border border-dashed border-brown/40 px-4 py-3.5 text-brown transition-colors hover:border-brown"
-            style={{ fontSize: "9px" }}
+            className="cursor-pointer"
+            style={{
+              marginTop: 12,
+              width: "100%",
+              height: 50,
+              border: "1px dashed rgba(74,38,22,.45)",
+              borderRadius: 12,
+              background: "transparent",
+              color: "#24150D",
+              fontSize: 12,
+              letterSpacing: ".18em",
+              fontWeight: 600,
+            }}
           >
-            + Add Pickup Window
-          </button>
-        )}
-      </section>
-
-      {/* packages */}
-      <section className="mt-4 border border-brown/10 bg-cream-raised px-5 py-5">
-        <h2 className="eyebrow text-muted-2">Available Package Sizes</h2>
-        <div className="mt-4 flex flex-col gap-4">
-          {pkgs.map((p, i) => (
-            <div key={p.kind} className="flex items-center gap-3">
-              <button
-                role="switch"
-                aria-checked={p.enabled}
-                disabled={readOnly}
-                onClick={() =>
-                  setPkgs(pkgs.map((x, j) => (j === i ? { ...x, enabled: !x.enabled } : x)))
-                }
-                className="relative h-7 w-12 flex-none rounded-full transition-colors disabled:opacity-60"
-                style={{ background: p.enabled ? "#4A2616" : "#D9CBB6" }}
-              >
-                <span
-                  className="absolute top-0.5 h-6 w-6 rounded-full bg-cream transition-transform"
-                  style={{ transform: p.enabled ? "translateX(22px)" : "translateX(2px)", left: 0 }}
-                />
-              </button>
-              <div className="min-w-0 flex-1">
-                <p className="eyebrow text-ink" style={{ fontSize: "9px" }}>
-                  {PACKAGE_META[p.kind].title}
-                </p>
-                <p className="text-xs text-muted-2">{PACKAGE_META[p.kind].sub}</p>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="text-muted">$</span>
-                <input
-                  inputMode="numeric"
-                  className="no-spin w-16 border border-brown/20 bg-cream px-2 py-2 text-right text-sm text-ink outline-none focus:border-brown disabled:opacity-60"
-                  value={p.priceCents / 100}
-                  disabled={readOnly || !p.enabled}
-                  onChange={(e) => {
-                    const digits = e.target.value.replace(/\D/g, "");
-                    const dollars = Math.min(1000, Number(digits || 0));
-                    setPkgs(
-                      pkgs.map((x, j) => (j === i ? { ...x, priceCents: dollars * 100 } : x)),
-                    );
-                  }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* actions */}
-      <div className="mt-5 flex flex-col gap-3">
-        {drop.status === "live" && (
-          <button
-            disabled={pending}
-            onClick={() => save()}
-            className="eyebrow w-full bg-ink px-6 py-4 text-cream transition-all duration-300 hover:tracking-[0.42em] disabled:opacity-60"
-          >
-            {pending ? "Saving…" : "Save Drop"}
-          </button>
-        )}
-        {drop.status === "scheduled" && (
-          <>
-            <button
-              disabled={pending}
-              onClick={() => save()}
-              className="eyebrow w-full border border-brown/30 px-6 py-4 text-brown transition-colors hover:border-brown disabled:opacity-60"
-            >
-              {pending ? "Saving…" : "Save Drop"}
-            </button>
-            <button
-              disabled={pending}
-              onClick={() => save("makeLive")}
-              className="eyebrow w-full bg-ink px-6 py-4 text-cream transition-all duration-300 hover:tracking-[0.42em] disabled:opacity-60"
-            >
-              {pending ? "Working…" : "Make This the Live Drop"}
-            </button>
-          </>
-        )}
-        {drop.status === "complete" && (
-          <button
-            disabled={pending}
-            onClick={reuse}
-            className="eyebrow w-full bg-ink px-6 py-4 text-cream transition-all duration-300 hover:tracking-[0.42em] disabled:opacity-60"
-          >
-            {pending ? "Working…" : "Reuse as Next Drop"}
+            + ADD PICKUP WINDOW
           </button>
         )}
       </div>
+
+      {/* packages */}
+      <div style={{ background: "#FBF8F1", borderRadius: 16, padding: "16px 18px 6px" }}>
+        <div style={SECTION_LABEL}>AVAILABLE PACKAGE SIZES</div>
+        {pkgs.map((p, i) => (
+          <div
+            key={p.kind}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              minHeight: 68,
+              borderBottom: i < pkgs.length - 1 ? "1px solid rgba(74,38,22,.1)" : 0,
+            }}
+          >
+            <Toggle
+              on={p.enabled}
+              disabled={readOnly}
+              onClick={() => setPkgs(pkgs.map((x, j) => (j === i ? { ...x, enabled: !x.enabled } : x)))}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 500 }}>{PACKAGE_META[p.kind].name}</div>
+              <div style={{ fontSize: 13, color: "#6E5546" }}>{PACKAGE_META[p.kind].sub}</div>
+            </div>
+            <div
+              style={{
+                flex: "0 0 auto",
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                height: 44,
+                border: "1px solid rgba(74,38,22,.2)",
+                borderRadius: 10,
+                background: "#FFFFFF",
+                padding: "0 10px",
+              }}
+            >
+              <span style={{ color: "#6E5546" }}>$</span>
+              <input
+                value={p.priceCents / 100}
+                inputMode="numeric"
+                disabled={readOnly || !p.enabled}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, "");
+                  const dollars = Math.min(1000, Number(digits || 0));
+                  setPkgs(pkgs.map((x, j) => (j === i ? { ...x, priceCents: dollars * 100 } : x)));
+                }}
+                className="disabled:opacity-60"
+                style={{ width: 40, border: 0, outline: "none", fontSize: 16, color: "#24150D", background: "transparent" }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {actions.map((bt) => (
+        <button
+          key={bt.label}
+          disabled={pending}
+          onClick={bt.onClick}
+          className="cursor-pointer disabled:opacity-60"
+          style={{
+            height: 58,
+            border: "1px solid #24150D",
+            borderRadius: 14,
+            background: bt.bg,
+            color: bt.color,
+            fontSize: 13,
+            letterSpacing: ".2em",
+            fontWeight: 600,
+          }}
+        >
+          {pending ? "WORKING…" : bt.label}
+        </button>
+      ))}
     </main>
   );
 }

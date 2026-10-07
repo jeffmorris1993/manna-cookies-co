@@ -33,18 +33,18 @@ console.log("1. HOME:", /TODAY'S MANNA/i.test(home) ? "✓" : "✗", "| has stat
 // Orders tab: walk MC-1050 new -> preparing -> ready -> picked -> undo
 await page.goto(`${base}/dashboard/orders`);
 await page.waitForSelector("text=Test Customer", { timeout: 15000 });
-await page.getByRole("button", { name: "Start Preparing" }).click();
+await page.getByRole("button", { name: "Start Preparing" }).first().click();
 await page.waitForSelector("text=PREPARING", { timeout: 10000 });
 console.log("2. new -> preparing ✓");
-await page.getByRole("button", { name: "Mark Ready" }).click();
+await page.getByRole("button", { name: "Mark Ready" }).first().click();
 await page.waitForSelector("text=READY", { timeout: 10000 });
 console.log("3. preparing -> ready ✓");
-await page.getByRole("button", { name: "Mark Picked Up" }).click();
+await page.getByRole("button", { name: "Mark Picked Up" }).first().click();
 await page.waitForSelector("text=PICKED UP", { timeout: 10000 });
 console.log("4. ready -> picked ✓");
 await shot("orders");
-await page.getByRole("button", { name: "Undo Pickup" }).click();
-await page.waitForSelector("button:has-text('Mark Picked Up')", { timeout: 10000 });
+await page.getByRole("button", { name: "Undo Pickup" }).first().click();
+await page.waitForSelector("button:has-text('MARK PICKED UP')", { timeout: 10000 });
 console.log("5. undo -> ready ✓");
 
 // filter chips
@@ -68,7 +68,7 @@ await page.waitForSelector("text=LIVE ON THE WEBSITE", { timeout: 15000 });
 console.log("8. drop editor opens ✓");
 
 // capacity stepper: +6 then save
-const capBefore = await page.locator("span.font-display.text-xl").first().innerText();
+const capBefore = await page.locator('button[aria-label="Decrease capacity"] + span').innerText();
 await page.getByRole("button", { name: "Increase capacity" }).click();
 await page.getByRole("button", { name: "Save Drop" }).click();
 await page.waitForSelector("text=Drop saved", { timeout: 15000 });

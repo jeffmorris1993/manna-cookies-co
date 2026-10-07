@@ -6,39 +6,64 @@ import MannaMark from "./MannaMark";
 
 const KEY = "manna_intro_v2";
 
-export default function IntroOverlay({
-  replayToken = 0,
-}: {
-  /** bump to replay the intro (footer button) */
-  replayToken?: number;
-}) {
+function markSeen() {
+  try {
+    sessionStorage.setItem(KEY, "1");
+  } catch {}
+}
+
+export default function IntroOverlay({ replayToken = 0 }: { replayToken?: number }) {
   const [show, setShow] = useState(false);
-  const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
-    if (replayToken === 0 && sessionStorage.getItem(KEY) === "1") return;
+    let seen = false;
+    try {
+      seen = sessionStorage.getItem(KEY) === "1";
+    } catch {}
+    if (replayToken === 0 && seen) return;
+    if (replayToken > 0) window.scrollTo(0, 0);
     setShow(true);
-    setLeaving(false);
-    sessionStorage.setItem(KEY, "1");
-    const t1 = window.setTimeout(() => setLeaving(true), 1900);
-    const t2 = window.setTimeout(() => setShow(false), 2550);
-    return () => {
-      window.clearTimeout(t1);
-      window.clearTimeout(t2);
-    };
+    // marked seen when the intro ends (not on mount) so StrictMode's
+    // double-effect in dev can't strand the overlay
+    const t = window.setTimeout(() => {
+      markSeen();
+      setShow(false);
+    }, 2550);
+    return () => window.clearTimeout(t);
   }, [replayToken]);
 
   if (!show) return null;
 
   return (
-    <button
+    <div
+      onClick={() => {
+        markSeen();
+        setShow(false);
+      }}
+      role="button"
       aria-label="Skip intro"
-      onClick={() => setShow(false)}
-      className="fixed inset-0 z-[90] flex cursor-pointer items-center justify-center border-0 bg-cream"
-      style={leaving ? { animation: "mannaFadeOut .65s cubic-bezier(.2,.7,.2,1) forwards" } : undefined}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 80,
+        background: "#F5EFE4",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer",
+        animation: "mannaFadeOut .6s ease 1.9s forwards",
+      }}
     >
-      <Crumbs count={18} color="74,38,22" className="pointer-events-none absolute inset-0" />
-      <MannaMark size={Math.min(340, typeof window !== "undefined" ? window.innerWidth * 0.72 : 340)} />
-    </button>
+      <Crumbs
+        n={18}
+        once
+        top
+        color="74,38,22"
+        speed={3.2}
+        alpha={0.9}
+        className="pointer-events-none absolute inset-0 h-full w-full"
+      />
+      <MannaMark />
+    </div>
   );
 }

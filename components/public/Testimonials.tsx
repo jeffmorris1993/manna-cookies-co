@@ -1,104 +1,161 @@
 import Image from "next/image";
 
-type Tile =
-  | { kind: "photo"; src: string; alt: string }
-  | { kind: "quote"; dark: boolean; quote: string; source: string };
+const IMG_HOVER =
+  "transition-transform duration-[1.2s] ease-[cubic-bezier(.2,.7,.2,1)] hover:scale-[1.06]";
 
-const TILES: Tile[] = [
-  { kind: "photo", src: "/cookie-broken.jpg", alt: "Cookie broken open with melted chocolate" },
-  {
-    kind: "quote",
-    dark: true,
-    quote: "We split a dozen four ways and still argued over the last one.",
-    source: "@CUSTOMER · INSTAGRAM",
-  },
-  { kind: "photo", src: "/customer.jpg", alt: "Customer enjoying a Manna cookie" },
-  {
-    kind: "quote",
-    dark: false,
-    quote: "The brown butter is the real thing. Already planning my next order.",
-    source: "@CUSTOMER · FACEBOOK",
-  },
-  { kind: "photo", src: "/sea-salt.jpg", alt: "Flaky sea salt falling onto a cookie" },
-  {
-    kind: "quote",
-    dark: true,
-    quote: "Ordered a dozen for my mom's birthday. Gone before the candles were lit.",
-    source: "@CUSTOMER · TEXT MESSAGE",
-  },
-];
+function Photo({ src, alt, delay }: { src: string; alt: string; delay?: string }) {
+  return (
+    <div
+      data-reveal="up"
+      data-delay={delay}
+      style={{ aspectRatio: "4/5", width: "100%", minWidth: 0, scrollSnapAlign: "start", overflow: "hidden" }}
+    >
+      <Image
+        src={src}
+        alt={alt}
+        width={340}
+        height={425}
+        className={IMG_HOVER}
+        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+      />
+    </div>
+  );
+}
+
+function Quote({
+  dark,
+  quote,
+  source,
+  delay,
+}: {
+  dark: boolean;
+  quote: string;
+  source: string;
+  delay?: string;
+}) {
+  return (
+    <div
+      data-reveal="up"
+      data-delay={delay}
+      style={{
+        aspectRatio: "4/5",
+        width: "100%",
+        minWidth: 0,
+        scrollSnapAlign: "start",
+        background: dark ? "#24150D" : "#FBF8F1",
+        color: dark ? "#F5EFE4" : undefined,
+        border: dark ? undefined : "1px solid rgba(74,38,22,.25)",
+        padding: "clamp(16px,1.8vw,24px)",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+      }}
+    >
+      <div className="font-display" style={{ fontSize: 42, lineHeight: 0.6, color: dark ? "#C9A57E" : "#8A6440" }}>
+        &ldquo;
+      </div>
+      <div
+        className="font-display"
+        style={{ fontSize: "clamp(15px,1.35vw,18px)", lineHeight: 1.35, textWrap: "pretty" }}
+      >
+        {quote}
+      </div>
+      <div style={{ fontSize: 10, letterSpacing: ".22em", color: dark ? "#D9C8B3" : "#6E5546" }}>
+        {source}
+      </div>
+    </div>
+  );
+}
 
 export default function Testimonials() {
   return (
-    <section data-screen-label="Social" className="bg-cream px-6 py-20 sm:px-10 sm:py-28">
-      <div className="mx-auto max-w-5xl">
-        <div className="text-center">
-          <span className="eyebrow text-brown-muted" data-reveal="fade">
-            Shared by You
-          </span>
-          <h2
-            className="mt-5 font-display font-medium text-ink"
-            style={{ fontSize: "clamp(36px,5.5vw,68px)", lineHeight: 1.02 }}
-            data-reveal="up"
-          >
-            GOOD NEWS <span className="italic text-brown-muted">travels fast.</span>
-          </h2>
+    <section
+      data-screen-label="Social"
+      style={{ background: "#F5EFE4", padding: "clamp(88px,11vw,150px) clamp(20px,5vw,64px)" }}
+    >
+      <div style={{ maxWidth: 1180, margin: "0 auto" }}>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "space-between",
+            alignItems: "flex-end",
+            gap: 24,
+          }}
+        >
+          <div>
+            <div
+              data-reveal="fade"
+              style={{ fontSize: 11, letterSpacing: ".42em", fontWeight: 500, color: "#8A6440" }}
+            >
+              SHARED BY YOU
+            </div>
+            <h2
+              className="font-display"
+              style={{ margin: "18px 0 0", fontWeight: 500, fontSize: "clamp(36px,5.5vw,68px)", lineHeight: 1.02 }}
+            >
+              <span style={{ display: "block", overflow: "hidden", paddingBottom: ".06em" }}>
+                <span data-reveal="mask" style={{ display: "block" }}>
+                  GOOD NEWS
+                </span>
+              </span>
+              <span style={{ display: "block", overflow: "hidden", paddingBottom: ".06em" }}>
+                <span data-reveal="mask" data-delay="100" style={{ display: "block", fontStyle: "italic" }}>
+                  travels fast.
+                </span>
+              </span>
+            </h2>
+          </div>
           <a
             href="https://instagram.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="eyebrow mt-6 inline-block border-b border-brown/40 pb-1 text-brown transition-[letter-spacing] duration-300 hover:tracking-[0.42em]"
-            data-reveal="fade"
-            data-delay="150"
+            style={{
+              fontSize: 11,
+              letterSpacing: ".24em",
+              fontWeight: 500,
+              borderBottom: "1px solid #4A2616",
+              paddingBottom: 5,
+            }}
           >
-            Tag Us on Instagram
+            TAG US ON INSTAGRAM
           </a>
         </div>
 
-        <div className="mt-14 grid grid-cols-2 gap-4 sm:flex sm:snap-x sm:snap-mandatory sm:gap-6 sm:overflow-x-auto sm:pb-4">
-          {TILES.map((t, i) => (
-            <div
-              key={i}
-              data-reveal="up"
-              data-delay={String((i % 3) * 110)}
-              className="sm:w-64 sm:flex-none sm:snap-start"
-              style={{ aspectRatio: "4/5" }}
-            >
-              {t.kind === "photo" ? (
-                <div className="relative h-full w-full overflow-hidden rounded-md">
-                  <Image
-                    src={t.src}
-                    alt={t.alt}
-                    fill
-                    sizes="(max-width: 640px) 45vw, 256px"
-                    className="object-cover"
-                  />
-                </div>
-              ) : (
-                <figure
-                  className={`flex h-full w-full flex-col justify-between rounded-md p-6 ${
-                    t.dark ? "bg-ink text-cream" : "border border-brown/20 bg-cream-raised text-ink"
-                  }`}
-                >
-                  <div
-                    className={`font-display text-6xl leading-none ${t.dark ? "text-gold" : "text-brown/30"}`}
-                    aria-hidden
-                  >
-                    &ldquo;
-                  </div>
-                  <blockquote className="font-display text-base italic leading-snug sm:text-lg">
-                    {t.quote}
-                  </blockquote>
-                  <figcaption
-                    className={`eyebrow mt-4 ${t.dark ? "text-cream-dark-muted" : "text-muted-2"}`}
-                    style={{ fontSize: "9px" }}
-                  >
-                    {t.source}
-                  </figcaption>
-                </figure>
-              )}
-            </div>
-          ))}
+        <div
+          style={{
+            marginTop: 48,
+            display: "grid",
+            gridAutoFlow: "column",
+            gridAutoColumns: "minmax(170px,1fr)",
+            gap: "clamp(10px,1.4vw,18px)",
+            overflowX: "auto",
+            scrollSnapType: "x mandatory",
+            paddingBottom: 6,
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          <Photo src="/customer.jpg" alt="Customer enjoying a Manna cookie" />
+          <Quote
+            dark
+            delay="80"
+            quote="We split a dozen four ways and still argued over the last one."
+            source="@CUSTOMER · INSTAGRAM"
+          />
+          <Photo src="/cookie-broken.jpg" alt="Cookie broken open" delay="160" />
+          <Quote
+            dark={false}
+            delay="240"
+            quote="The brown butter is the real thing. Already planning my next order."
+            source="@CUSTOMER · FACEBOOK"
+          />
+          <Photo src="/sea-salt.jpg" alt="Sea salt on a fresh cookie" delay="160" />
+          <Quote
+            dark
+            delay="240"
+            quote="Ordered a dozen for my mom's birthday. Gone before the candles were lit."
+            source="@CUSTOMER · TEXT MESSAGE"
+          />
         </div>
       </div>
     </section>

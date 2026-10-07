@@ -2,66 +2,83 @@
 
 import Image from "next/image";
 
-export default function SiteFooter({ onReplayIntro }: { onReplayIntro: () => void }) {
+export default function SiteFooter({
+  onReplayIntro,
+  onOrder,
+}: {
+  onReplayIntro: () => void;
+  onOrder: (e?: React.MouseEvent) => void;
+}) {
   return (
-    <footer className="bg-cream-raised">
-      <div className="ribbon-sm" role="presentation" />
-      <div className="mx-auto max-w-3xl px-6 py-16 text-center sm:py-20">
+    <footer className="text-center" style={{ background: "#FBF8F1" }}>
+      <div
+        style={{
+          height: 14,
+          background: "repeating-linear-gradient(90deg,#4A2616 0 14px,#FBF8F1 14px 28px)",
+        }}
+      />
+      <div
+        style={{
+          padding: "72px 24px 120px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
         <Image
           src="/logo.png"
-          alt="Manna Cookies & Co. logo"
+          alt="Manna Cookies & Co."
           width={128}
           height={128}
-          className="mx-auto h-28 w-28 sm:h-32 sm:w-32"
+          style={{ width: 128, height: 128, display: "block" }}
         />
-
-        <nav className="mt-10 flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
-          <a
-            href="https://instagram.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="eyebrow text-brown transition-[letter-spacing] duration-300 hover:tracking-[0.42em]"
-          >
-            Instagram
+        <div
+          style={{
+            marginTop: 28,
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            gap: "12px 32px",
+            fontSize: 11,
+            letterSpacing: ".26em",
+            fontWeight: 500,
+          }}
+        >
+          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">
+            INSTAGRAM
           </a>
-          <a
-            href="mailto:hello@mannacookies.co"
-            className="eyebrow text-brown transition-[letter-spacing] duration-300 hover:tracking-[0.42em]"
-          >
-            Contact
+          <a href="mailto:hello@mannacookies.co">CONTACT</a>
+          <a href="#order" onClick={onOrder}>
+            PICKUP INFO
           </a>
-          <a
-            href="#order"
-            onClick={(e) => {
-              e.preventDefault();
-              document.getElementById("order")?.scrollIntoView({ behavior: "smooth" });
-            }}
-            className="eyebrow text-brown transition-[letter-spacing] duration-300 hover:tracking-[0.42em]"
-          >
-            Pickup Info
-          </a>
-        </nav>
-
-        <p className="mt-8 text-sm leading-relaxed text-muted">
+        </div>
+        <p style={{ margin: "20px 0 0", fontSize: "clamp(12px,3.5vw,14px)", lineHeight: 1.6, color: "#5A4334" }}>
           Pickup by reservation.
           <br />
-          Your pickup address is sent with your confirmation.
+          <span style={{ whiteSpace: "nowrap" }}>Your pickup address is sent with your confirmation.</span>
         </p>
-
-        <p className="mt-10 font-display text-xl text-ink">Manna Cookies &amp; Co.</p>
-        <p className="mt-1 font-display italic text-brown-muted">Straight From Heaven.</p>
-
-        <div className="mt-10 flex flex-col items-center gap-3">
-          <button
-            onClick={onReplayIntro}
-            className="eyebrow text-muted-2 transition-colors hover:text-brown"
-          >
-            EST. 2023 · Replay Intro
-          </button>
-          <span className="eyebrow text-muted-2" style={{ fontSize: "9px" }}>
-            Powered by Sirrom Studios
-          </span>
+        <div
+          className="font-display"
+          style={{ marginTop: 52, fontSize: "clamp(26px,4vw,36px)", letterSpacing: ".04em" }}
+        >
+          Manna Cookies &amp; Co.
         </div>
+        <div
+          className="font-display italic"
+          style={{ marginTop: 6, fontSize: "clamp(20px,3vw,26px)", color: "#8A6440" }}
+        >
+          Straight From Heaven.
+        </div>
+        <button
+          onClick={onReplayIntro}
+          className="cursor-pointer border-0 bg-transparent"
+          style={{ marginTop: 44, fontSize: 10, letterSpacing: ".24em", color: "#6E5546", padding: 10 }}
+        >
+          EST. 2023 · REPLAY INTRO
+        </button>
+        <span style={{ marginTop: 14, fontSize: 10, letterSpacing: ".24em", color: "#6E5546" }}>
+          POWERED BY SIRROM STUDIOS
+        </span>
       </div>
     </footer>
   );

@@ -29,39 +29,69 @@ export default function CustomerList({ customers }: { customers: CustomerSummary
   }, [customers, q]);
 
   return (
-    <div className="mt-6">
+    <div style={{ marginTop: 12, animation: "mannaIn .35s ease" }}>
       <input
         type="search"
         placeholder="Search customers..."
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        className="w-full border border-brown/20 bg-cream-raised px-4 py-3.5 text-[15px] text-ink outline-none placeholder:text-muted-2 focus:border-brown"
+        style={{
+          width: "100%",
+          height: 52,
+          border: "1px solid rgba(74,38,22,.2)",
+          borderRadius: 12,
+          background: "#FBF8F1",
+          padding: "0 16px",
+          fontSize: 16,
+          color: "#24150D",
+          outline: "none",
+        }}
       />
-      <div className="mt-5 flex flex-col gap-3">
+      <div style={{ marginTop: 12, background: "#FBF8F1", borderRadius: 16, overflow: "hidden" }}>
         {filtered.length === 0 && (
-          <p className="border border-brown/10 bg-cream-raised px-5 py-8 text-center text-sm text-muted">
+          <div style={{ padding: "40px 0", textAlign: "center", color: "#6E5546", fontSize: 14 }}>
             No customers yet.
-          </p>
+          </div>
         )}
         {filtered.map((c) => (
           <Link
             key={c.id}
             href={`/dashboard/customers/${c.id}`}
-            className="flex items-center justify-between gap-4 border border-brown/10 bg-cream-raised px-5 py-4 transition-colors hover:border-brown/40"
+            style={{
+              width: "100%",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 12,
+              padding: "14px 16px",
+              borderBottom: "1px solid rgba(74,38,22,.1)",
+              color: "#24150D",
+            }}
           >
-            <div className="min-w-0">
-              <p className="truncate font-display text-lg text-ink">{c.name}</p>
-              <p className="truncate text-xs text-muted-2">
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 500, fontSize: 16 }}>{c.name}</div>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "#6E5546",
+                  marginTop: 2,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
                 {c.phone}
                 {c.email ? ` · ${c.email}` : ""}
-              </p>
+              </div>
             </div>
-            <div className="flex-none text-right">
-              <p className="font-display text-xl text-ink">{formatMoney(c.spentCents)}</p>
-              <p className="text-xs text-muted-2">
+            <div style={{ flex: "0 0 auto", textAlign: "right" }}>
+              <div className="font-display" style={{ fontSize: 20 }}>
+                {formatMoney(c.spentCents)}
+              </div>
+              <div style={{ fontSize: 12, color: "#6E5546" }}>
                 {c.orderCount} {c.orderCount === 1 ? "order" : "orders"}
                 {c.lastOrder ? ` · last ${c.lastOrder}` : ""}
-              </p>
+              </div>
             </div>
           </Link>
         ))}

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-/** Animated count-up stat tile (900ms cubic ease, like the prototype's tween). */
+/** Count-up stat tile — rounded card, label above value, per the design. */
 export default function StatTile({
   label,
   value,
@@ -24,8 +24,7 @@ export default function StatTile({
     const dur = 900;
     const tick = (t: number) => {
       const p = Math.min(1, (t - start) / dur);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setDisplay(Math.round(value * eased));
+      setDisplay(Math.round(value * (1 - Math.pow(1 - p, 3))));
       if (p < 1) raf.current = requestAnimationFrame(tick);
     };
     raf.current = requestAnimationFrame(tick);
@@ -33,13 +32,16 @@ export default function StatTile({
   }, [value]);
 
   return (
-    <div className="border border-brown/10 bg-cream-raised px-4 py-5 text-center">
-      <div className="font-display text-3xl font-medium text-ink" style={{ fontVariantNumeric: "tabular-nums" }}>
+    <div style={{ background: "#FBF8F1", borderRadius: 14, padding: "16px 16px 14px" }}>
+      <div style={{ fontSize: 11, letterSpacing: ".16em", fontWeight: 500, color: "#6E5546" }}>
+        {label}
+      </div>
+      <div
+        className="font-display"
+        style={{ marginTop: 8, fontSize: 40, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}
+      >
         {prefix}
         {display.toLocaleString()}
-      </div>
-      <div className="eyebrow mt-2 text-muted-2" style={{ fontSize: "8.5px" }}>
-        {label}
       </div>
     </div>
   );

@@ -1,85 +1,68 @@
 "use client";
 
-/**
- * The animated SVG rendition of the Manna mark used by the intro overlay:
- * two stroke-drawn concentric circles, arc text, giant Playfair M, two dots.
- */
-export default function MannaMark({ size = 300, animate = true }: { size?: number; animate?: boolean }) {
-  const C1 = 2 * Math.PI * 204;
-  const C2 = 2 * Math.PI * 190;
+/** The intro's animated SVG mark — geometry and timings verbatim from the design file. */
+export default function MannaMark() {
   return (
     <svg
       viewBox="0 0 500 500"
-      width={size}
-      height={size}
       role="img"
       aria-label="Manna Cookies & Co."
-      style={{ display: "block" }}
+      style={{ position: "relative", width: "min(66vw,320px)", height: "auto", overflow: "visible" }}
     >
       <defs>
-        <path id="mannaTop" d="M 86 250 A 164 164 0 0 1 414 250" fill="none" />
-        <path id="mannaBot" d="M 102 250 A 148 148 0 0 0 398 250" fill="none" />
+        <path id="mannaTop" d="M 102,250 A 148,148 0 0 1 398,250" />
+        <path id="mannaBot" d="M 76,250 A 174,174 0 0 0 424,250" />
       </defs>
       <circle
-        cx="250"
-        cy="250"
-        r="204"
-        fill="none"
-        stroke="#4A2616"
-        strokeWidth="7"
-        strokeDasharray={C1}
-        strokeDashoffset={animate ? C1 : 0}
-        style={animate ? { animation: "mannaDraw 1.4s cubic-bezier(.2,.7,.2,1) .1s forwards" } : undefined}
+        cx="250" cy="250" r="204" transform="rotate(-90 250 250)"
+        style={{
+          fill: "none", stroke: "#4A2616", strokeWidth: 7,
+          strokeDasharray: 1282, strokeDashoffset: 1282,
+          animation: "mannaDraw 1s cubic-bezier(.65,0,.35,1) .1s forwards",
+        }}
       />
       <circle
-        cx="250"
-        cy="250"
-        r="190"
-        fill="none"
-        stroke="#4A2616"
-        strokeWidth="2.5"
-        strokeDasharray={C2}
-        strokeDashoffset={animate ? C2 : 0}
-        style={animate ? { animation: "mannaDraw 1.4s cubic-bezier(.2,.7,.2,1) .25s forwards" } : undefined}
+        cx="250" cy="250" r="190" transform="rotate(90 250 250)"
+        style={{
+          fill: "none", stroke: "#4A2616", strokeWidth: 2.5,
+          strokeDasharray: 1194, strokeDashoffset: 1194,
+          animation: "mannaDraw 1s cubic-bezier(.65,0,.35,1) .25s forwards",
+        }}
       />
       <text
-        x="250"
-        y="318"
-        textAnchor="middle"
-        fontFamily="var(--font-playfair), Georgia, serif"
-        fontSize="214"
-        fontWeight="500"
-        fill="#4A2616"
-        style={animate ? { opacity: 0, animation: "mannaRise .8s cubic-bezier(.2,.7,.2,1) .55s forwards" } : undefined}
+        x="250" y="322"
+        style={{
+          fontFamily: "var(--font-playfair), 'Playfair Display', serif", fontSize: 214,
+          fontWeight: 500, fill: "#4A2616", textAnchor: "middle", opacity: 0,
+          animation: "mannaRise .6s cubic-bezier(.2,.7,.2,1) .7s forwards",
+        }}
       >
         M
       </text>
       <text
-        fontFamily="var(--font-jost), sans-serif"
-        fontSize="30"
-        fontWeight="600"
-        letterSpacing="10"
-        fill="#4A2616"
-        style={animate ? { opacity: 0, animation: "mannaRise .8s cubic-bezier(.2,.7,.2,1) .8s forwards" } : undefined}
+        style={{
+          fontFamily: "var(--font-playfair), 'Playfair Display', serif", fontSize: 40,
+          letterSpacing: 16, fill: "#4A2616", opacity: 0,
+          animation: "mannaFade .5s ease 1.05s forwards",
+        }}
       >
-        <textPath href="#mannaTop" startOffset="50%" textAnchor="middle">
+        <textPath href="#mannaTop" startOffset="50%" style={{ textAnchor: "middle" }}>
           MANNA
         </textPath>
       </text>
       <text
-        fontFamily="var(--font-jost), sans-serif"
-        fontSize="22"
-        fontWeight="600"
-        letterSpacing="6"
-        fill="#4A2616"
-        style={animate ? { opacity: 0, animation: "mannaRise .8s cubic-bezier(.2,.7,.2,1) .95s forwards" } : undefined}
+        style={{
+          fontFamily: "var(--font-playfair), 'Playfair Display', serif", fontSize: 33,
+          letterSpacing: 7, fill: "#4A2616", opacity: 0,
+          animation: "mannaFade .5s ease 1.2s forwards",
+        }}
       >
-        <textPath href="#mannaBot" startOffset="50%" textAnchor="middle">
+        <textPath href="#mannaBot" startOffset="50%" style={{ textAnchor: "middle" }}>
           COOKIES &amp; CO.
         </textPath>
       </text>
-      <circle cx="84" cy="250" r="6" fill="#4A2616" />
-      <circle cx="416" cy="250" r="6" fill="#4A2616" />
+      <circle cx="84" cy="250" r="6" style={{ fill: "#4A2616", opacity: 0, animation: "mannaFade .4s ease 1.2s forwards" }} />
+      <circle cx="416" cy="250" r="6" style={{ fill: "#4A2616", opacity: 0, animation: "mannaFade .4s ease 1.2s forwards" }} />
     </svg>
   );
 }

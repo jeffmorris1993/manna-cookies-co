@@ -2,7 +2,7 @@ import "server-only";
 import type { LiveDropView, PackageKind } from "./types";
 import { PACKAGE_META } from "./types";
 import { availLine } from "./avail";
-import { deadlineLabel, longDate, shortDate, windowLabel } from "./format";
+import { deadlineLabel, longDate, monthDay, windowLabel } from "./format";
 import { supabaseAdmin } from "./supabase/admin";
 
 const COUNTED_STATUSES = ["new", "preparing", "ready", "picked"] as const;
@@ -82,7 +82,7 @@ export async function getLiveDropView(): Promise<LiveDropView | null> {
     desc: drop.description,
     pickupDateISO: drop.pickup_date,
     pickupDateLabel: longDate(drop.pickup_date),
-    pickupShort: shortDate(drop.pickup_date),
+    pickupShort: `PICKUP ${monthDay(drop.pickup_date).toUpperCase()}`,
     deadlineLabel: deadlineLabel(deadline),
     capacity: drop.capacity,
     reserved,

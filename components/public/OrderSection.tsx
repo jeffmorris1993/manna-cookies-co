@@ -1,132 +1,201 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import type { LiveDropView, PackageKind } from "@/lib/types";
 import { formatMoney } from "@/lib/format";
 import WaitlistForm from "./WaitlistForm";
 
 export default function OrderSection({
   drop,
+  availSeen,
   onSelect,
 }: {
   drop: LiveDropView;
+  availSeen: boolean;
   onSelect: (kind: PackageKind) => void;
 }) {
-  const barRef = useRef<HTMLDivElement>(null);
-  const [seen, setSeen] = useState(false);
-
-  useEffect(() => {
-    const el = barRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          setSeen(true);
-          io.disconnect();
-        }
-      },
-      { threshold: 0.4 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
   const unavailable = !drop.orderable;
+  const unavailTitle =
+    !drop.isOpen && !drop.soldOut
+      ? "ORDERS ARE CLOSED FOR THIS WEEK."
+      : "THIS WEEK'S MANNA IS GONE.";
 
   return (
-    <section id="order" data-screen-label="Order" className="bg-cream-raised">
-      <div className="ribbon" role="presentation" />
-      <div className="mx-auto max-w-3xl px-6 py-20 text-center sm:px-10 sm:py-24">
-        <span className="eyebrow text-brown-muted" data-reveal="fade">
-          Order for Pickup
-        </span>
-        <h2
-          className="mt-5 font-display font-medium text-ink"
-          style={{ fontSize: "clamp(36px,5.5vw,68px)", lineHeight: 1.02 }}
-          data-reveal="up"
+    <section id="order" data-screen-label="Order" style={{ background: "#FBF8F1" }}>
+      <div
+        style={{
+          height: 34,
+          background: "repeating-linear-gradient(90deg,#4A2616 0 26px,#FBF8F1 26px 52px)",
+        }}
+      />
+      <div
+        className="text-center"
+        style={{ maxWidth: 1180, margin: "0 auto", padding: "clamp(80px,10vw,140px) clamp(20px,5vw,64px)" }}
+      >
+        <div
+          data-reveal="fade"
+          style={{ fontSize: 11, letterSpacing: ".42em", fontWeight: 500, color: "#8A6440" }}
         >
-          {unavailable
-            ? drop.soldOut
-              ? "THIS WEEK'S MANNA IS GONE."
-              : "ORDERS ARE CLOSED FOR THIS WEEK."
-            : "THIS WEEK'S MANNA"}
+          ORDER FOR PICKUP
+        </div>
+        <h2
+          className="font-display"
+          style={{
+            margin: "20px 0 0",
+            fontWeight: 500,
+            fontSize: "clamp(40px,7vw,88px)",
+            lineHeight: 1,
+            letterSpacing: ".02em",
+          }}
+        >
+          <span style={{ display: "block", overflow: "hidden", paddingBottom: ".06em" }}>
+            <span data-reveal="mask" style={{ display: "block" }}>
+              THIS WEEK&apos;S MANNA
+            </span>
+          </span>
         </h2>
+        <div
+          data-reveal="up"
+          data-delay="120"
+          className="font-display italic"
+          style={{ marginTop: 22, fontSize: "clamp(22px,3vw,30px)" }}
+        >
+          {drop.cookie}
+        </div>
+        <div
+          data-reveal="up"
+          data-delay="180"
+          style={{ marginTop: 10, fontSize: 13, letterSpacing: ".2em", color: "#5A4334" }}
+        >
+          {drop.desc}
+        </div>
+
+        <div data-reveal="up" data-delay="240" style={{ maxWidth: 520, margin: "40px auto 0" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              fontSize: 11,
+              letterSpacing: ".2em",
+              fontWeight: 500,
+            }}
+          >
+            <span>{drop.availLine}</span>
+            <span style={{ color: "#8A6440" }}>{drop.pickupShort}</span>
+          </div>
+          <div style={{ marginTop: 12, height: 3, background: "rgba(74,38,22,.14)", overflow: "hidden" }}>
+            <div
+              style={{
+                height: "100%",
+                width: `${availSeen ? drop.pct : 0}%`,
+                background: "#4A2616",
+                transition: "width 1.8s cubic-bezier(.2,.7,.2,1)",
+              }}
+            />
+          </div>
+        </div>
 
         {!unavailable && (
           <>
-            <p className="mt-6 font-display text-2xl italic text-brown" data-reveal="fade" data-delay="120">
-              {drop.cookie}
-            </p>
-            <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted" data-reveal="fade" data-delay="180">
-              {drop.desc}
-            </p>
-
-            <div ref={barRef} className="mx-auto mt-10 max-w-md" data-reveal="fade" data-delay="220">
-              <div className="flex items-baseline justify-between">
-                <span className="eyebrow text-brown">{drop.availLine}</span>
-                <span className="eyebrow text-muted-2">{drop.pickupShort}</span>
-              </div>
-              <div className="mt-3 h-[3px] w-full overflow-hidden rounded bg-brown/10">
-                <div
-                  className="h-full rounded bg-gold"
-                  style={{
-                    width: seen ? `${drop.pct}%` : "0%",
-                    transition: "width 1.2s cubic-bezier(.2,.7,.2,1)",
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="mt-12 grid gap-6 sm:grid-cols-3">
+            <div
+              className="text-center"
+              style={{
+                marginTop: 56,
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,200px),1fr))",
+                gap: "clamp(16px,2vw,28px)",
+              }}
+            >
               {drop.packages.map((pkg, i) => {
-                  const disabled = !pkg.available;
-                  return (
-                    <button
-                      key={pkg.kind}
-                      disabled={disabled}
-                      onClick={() => onSelect(pkg.kind)}
-                      data-reveal="up"
-                      data-delay={String(i * 120)}
-                      className={`arch-card group border bg-cream-raised px-6 pb-7 pt-12 text-center transition-all duration-500 ${
-                        disabled
-                          ? "cursor-not-allowed border-brown/10 opacity-55"
-                          : "border-brown/25 hover:-translate-y-1.5 hover:shadow-card-hover"
-                      }`}
+                const disabled = !pkg.available;
+                return (
+                  <button
+                    key={pkg.kind}
+                    data-reveal="up"
+                    data-delay={String(i * 110)}
+                    disabled={disabled}
+                    onClick={() => !disabled && onSelect(pkg.kind)}
+                    className={
+                      disabled
+                        ? "cursor-not-allowed"
+                        : "cursor-pointer transition-[box-shadow,translate] duration-[.4s] hover:-translate-y-1 hover:shadow-card-hover"
+                    }
+                    style={{
+                      border: "1px solid #4A2616",
+                      background: "#F5EFE4",
+                      padding: 9,
+                      color: "#24150D",
+                      opacity: disabled ? 0.45 : 1,
+                    }}
+                  >
+                    <div
+                      style={{
+                        border: "1px solid rgba(74,38,22,.35)",
+                        borderRadius: "50% 50% 0 0 / 90px 90px 0 0",
+                        padding: "44px 18px 28px",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 10,
+                      }}
                     >
-                      <div className="eyebrow text-ink">{pkg.title}</div>
-                      <div className="mt-1 text-xs tracking-[0.18em] text-muted-2">
-                        {pkg.sub.toUpperCase()}
+                      <div className="font-display" style={{ fontSize: 76, lineHeight: 0.9, fontWeight: 500 }}>
+                        {pkg.count}
                       </div>
-                      <div className="mt-5 font-display text-4xl font-medium text-ink">
+                      <div style={{ fontSize: 11, letterSpacing: ".3em", color: "#8A6440" }}>COOKIES</div>
+                      <div
+                        className="font-display"
+                        style={{
+                          marginTop: 14,
+                          fontSize: 17,
+                          letterSpacing: ".18em",
+                          lineHeight: 1.35,
+                          minHeight: 46,
+                          display: "flex",
+                          alignItems: "center",
+                        }}
+                      >
+                        {pkg.title}
+                      </div>
+                      <div style={{ width: 32, height: 1, background: "#4A2616", margin: "6px 0" }} />
+                      <div className="font-display" style={{ fontSize: 34 }}>
                         {formatMoney(pkg.priceCents)}
                       </div>
                       <div
-                        className={`eyebrow mt-6 inline-block border-b pb-1 ${
-                          disabled
-                            ? "border-transparent text-muted-2"
-                            : "border-brown/40 text-brown transition-[letter-spacing] duration-300 group-hover:tracking-[0.42em]"
-                        }`}
+                        style={{
+                          marginTop: 10,
+                          fontSize: 11,
+                          letterSpacing: ".24em",
+                          fontWeight: 500,
+                          borderBottom: "1px solid #4A2616",
+                          paddingBottom: 4,
+                        }}
                       >
-                        {disabled ? "Not Enough Left" : "Select"}
+                        {disabled ? "NOT ENOUGH LEFT" : "SELECT"}
                       </div>
-                    </button>
-                  );
-                })}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
-
-            <p className="eyebrow mt-10 text-muted-2" data-reveal="fade" data-delay="200">
+            <div style={{ marginTop: 32, fontSize: 14, color: "#5A4334" }}>
               Pickup only · {drop.pickupDateLabel} · Order by {drop.deadlineLabel}
-            </p>
+            </div>
           </>
         )}
 
         {unavailable && (
-          <>
-            <p className="mx-auto mt-6 max-w-md leading-relaxed text-muted" data-reveal="fade">
-              Join the list and you&apos;ll hear first when the next batch opens.
-            </p>
-            <WaitlistForm dropId={drop.id} />
-          </>
+          <div style={{ margin: "56px auto 0", maxWidth: 560, border: "1px solid #4A2616", padding: 9 }}>
+            <div style={{ border: "1px solid rgba(74,38,22,.35)", padding: "48px clamp(20px,5vw,48px)" }}>
+              <div className="font-display" style={{ fontSize: "clamp(28px,4vw,40px)", lineHeight: 1.1 }}>
+                {unavailTitle}
+              </div>
+              <p style={{ margin: "16px auto 0", maxWidth: 380, color: "#5A4334", lineHeight: 1.6 }}>
+                Join the list and you&apos;ll hear first when the next batch opens.
+              </p>
+              <WaitlistForm dropId={drop.id} />
+            </div>
+          </div>
         )}
       </div>
     </section>

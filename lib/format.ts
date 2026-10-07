@@ -9,6 +9,11 @@ export function longDate(iso: string): string {
   return d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
 }
 
+/** "2026-10-10" -> "Oct 10" */
+export function monthDay(iso: string): string {
+  return parseISODate(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
 /** "2026-10-10" -> "SAT, OCT 10" */
 export function shortDate(iso: string): string {
   const d = parseISODate(iso);

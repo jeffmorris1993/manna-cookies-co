@@ -3,7 +3,6 @@ import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { requireOwner } from "@/lib/auth";
 import { getLiveDropView } from "@/lib/live-drop";
-import { formatMoney } from "@/lib/format";
 import StatTile from "@/components/dashboard/StatTile";
 import OpenCloseCard from "@/components/dashboard/OpenCloseCard";
 import DotGrid from "@/components/dashboard/DotGrid";
@@ -21,13 +20,21 @@ export default async function DashboardHome() {
 
   if (!drop) {
     return (
-      <main className="pt-8">
-        <h1 className="font-display text-4xl font-medium text-ink">Today&apos;s Manna</h1>
-        <p className="mt-6 border border-brown/10 bg-cream-raised px-5 py-6 text-sm text-muted">
+      <main style={{ padding: "12px 0", animation: "mannaIn .35s ease" }}>
+        <h1 className="font-display" style={{ fontSize: 30, lineHeight: 1.1 }}>
+          Today&apos;s Manna
+        </h1>
+        <p style={{ marginTop: 16, background: "#FBF8F1", borderRadius: 16, padding: "24px 20px", fontSize: 14, color: "#6E5546" }}>
           No drop is live right now. Open the Bake tab to make one live.
         </p>
-        <Link href="/dashboard/drops" className="eyebrow mt-4 inline-block bg-ink px-6 py-4 text-cream">
-          Go to Drops
+        <Link
+          href="/dashboard/drops"
+          style={{
+            marginTop: 14, display: "block", textAlign: "center", height: 58, lineHeight: "58px",
+            borderRadius: 14, background: "#24150D", color: "#F5EFE4", fontSize: 13, letterSpacing: ".2em", fontWeight: 600,
+          }}
+        >
+          GO TO DROPS
         </Link>
       </main>
     );
@@ -47,65 +54,84 @@ export default async function DashboardHome() {
   const picked = orders.filter((o) => o.status === "picked").length;
 
   const pipeline = [
-    { label: "Orders to Prepare", count: toPrepare, href: "/dashboard/orders?filter=prepare" },
-    { label: "Orders Ready", count: ready, href: "/dashboard/orders?filter=ready" },
-    { label: "Orders Picked Up", count: picked, href: "/dashboard/orders?filter=picked" },
+    { label: "Orders to Prepare", n: toPrepare, href: "/dashboard/orders?filter=prepare" },
+    { label: "Orders Ready", n: ready, href: "/dashboard/orders?filter=ready" },
+    { label: "Orders Picked Up", n: picked, href: "/dashboard/orders?filter=picked" },
   ];
 
   return (
-    <main className="pt-8">
-      <h1 className="font-display text-4xl font-medium text-ink">Today&apos;s Manna</h1>
+    <main
+      style={{ padding: "12px 0", display: "flex", flexDirection: "column", gap: 14, animation: "mannaIn .35s ease" }}
+    >
+      <h1 className="font-display" style={{ fontSize: 30, lineHeight: 1.1 }}>
+        Today&apos;s Manna
+      </h1>
 
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile label="Cookies Ordered" value={cookiesOrdered} />
-        <StatTile label="Revenue" value={Math.round(revenueCents / 100)} prefix="$" />
-        <StatTile label="Orders" value={orders.length} />
-        <StatTile label="Cookies Remaining" value={drop.remaining} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10 }}>
+        <StatTile label="COOKIES ORDERED" value={cookiesOrdered} />
+        <StatTile label="REVENUE" value={Math.round(revenueCents / 100)} prefix="$" />
+        <StatTile label="ORDERS" value={orders.length} />
+        <StatTile label="COOKIES REMAINING" value={drop.remaining} />
       </div>
 
-      <div className="mt-4 bg-ink px-6 py-6 text-cream">
-        <div className="flex items-baseline justify-between">
-          <span className="eyebrow text-gold">Next Bake</span>
-          <span className="eyebrow text-cream-dark-muted" style={{ fontSize: "9px" }}>
-            {drop.pickupShort}
-          </span>
+      <div style={{ background: "#24150D", color: "#F5EFE4", borderRadius: 16, padding: 20 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 11, letterSpacing: ".2em", fontWeight: 500, color: "#C9A57E" }}>
+              NEXT BAKE
+            </div>
+            <div className="font-display" style={{ marginTop: 6, fontSize: 24 }}>
+              {drop.pickupDateLabel}
+            </div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div className="font-display" style={{ fontSize: 28, lineHeight: 1 }}>
+              {drop.reserved} / {drop.capacity}
+            </div>
+            <div style={{ fontSize: 11, color: "#D9C8B3", marginTop: 4 }}>cookies reserved</div>
+          </div>
         </div>
-        <p className="mt-3 font-display text-2xl">
-          {drop.reserved} <span className="text-cream-dark-muted">/ {drop.capacity}</span>
-          <span className="ml-2 text-sm text-cream-dark-muted">cookies reserved</span>
-        </p>
         <DotGrid capacity={drop.capacity} reserved={drop.reserved} />
-        <p className="mt-3 text-xs text-cream-dark-muted">
+        <div style={{ marginTop: 12, fontSize: 12, color: "#D9C8B3" }}>
           Each dot is one cookie · {drop.remaining} remaining
-        </p>
-        <p className="mt-4 border-t border-cream/10 pt-3 text-sm text-cream-dark-muted">
-          {drop.cookie} · {formatMoney(revenueCents)} collected
-        </p>
+        </div>
       </div>
 
       <OpenCloseCard dropId={drop.id} isOpen={drop.isOpen} deadlineLabel={drop.deadlineLabel} />
 
-      <div className="mt-4 grid grid-cols-3 gap-3">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
         {pipeline.map((p) => (
           <Link
             key={p.href}
             href={p.href}
-            className="border border-brown/10 bg-cream-raised px-3 py-5 text-center transition-colors hover:border-brown/40"
+            style={{
+              background: "#FBF8F1",
+              borderRadius: 14,
+              padding: "16px 12px",
+              textAlign: "left",
+              color: "#24150D",
+            }}
           >
-            <div className="font-display text-3xl font-medium text-ink">{p.count}</div>
-            <div className="eyebrow mt-2 text-muted-2" style={{ fontSize: "8px" }}>
-              {p.label}
+            <div className="font-display" style={{ fontSize: 34, lineHeight: 1 }}>
+              {p.n}
             </div>
+            <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.3, color: "#5A4334" }}>{p.label}</div>
           </Link>
         ))}
       </div>
 
       <Link
         href="/dashboard/whats-next"
-        className="eyebrow mt-6 block text-center text-muted-2 transition-colors hover:text-brown"
-        style={{ fontSize: "9px" }}
+        style={{
+          textAlign: "center",
+          fontSize: 10,
+          letterSpacing: ".2em",
+          fontWeight: 500,
+          color: "#8A7466",
+          padding: "8px 0",
+        }}
       >
-        What&apos;s next for Manna →
+        WHAT&apos;S NEXT FOR MANNA →
       </Link>
     </main>
   );

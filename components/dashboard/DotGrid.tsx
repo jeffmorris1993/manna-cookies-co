@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-/** One dot per cookie; reserved dots fill in with a staggered sweep. */
+/** One bordered dot per cookie; reserved dots fill gold with a count-up sweep. */
 export default function DotGrid({ capacity, reserved }: { capacity: number; reserved: number }) {
   const [filled, setFilled] = useState(0);
 
@@ -24,12 +24,17 @@ export default function DotGrid({ capacity, reserved }: { capacity: number; rese
   }, [reserved]);
 
   return (
-    <div className="mt-4 grid grid-cols-12 gap-1.5">
+    <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "repeat(12,1fr)", gap: 5 }}>
       {Array.from({ length: capacity }, (_, i) => (
-        <span
+        <div
           key={i}
-          className="aspect-square w-full rounded-full"
-          style={{ background: i < filled ? "#C9A57E" : "rgba(245,239,228,.14)" }}
+          style={{
+            aspectRatio: "1",
+            borderRadius: "50%",
+            background: i < filled ? "#C9A57E" : "transparent",
+            border: "1px solid #8A6440",
+            transition: "background .4s",
+          }}
         />
       ))}
     </div>

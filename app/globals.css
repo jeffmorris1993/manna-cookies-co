@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* Manna Cookies & Co. palette — extracted from the Sirrom prototype */
+  /* Manna Cookies & Co. palette — from Manna.dc.html */
   --color-cream: #f5efe4;
   --color-cream-raised: #fbf8f1;
   --color-cream-sunk: #f2ebdf;
@@ -38,71 +38,27 @@ html {
 }
 
 body {
+  margin: 0;
   background: var(--color-cream);
-  color: var(--color-body);
+  color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
-/* signature letter-spaced uppercase micro-label */
-.eyebrow {
-  font-size: 11px;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  font-weight: 600;
+a {
+  color: var(--color-brown);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--color-ink);
+}
+button,
+input,
+textarea {
+  font-family: inherit;
 }
 
-/* dashed ribbon divider from the prototype */
-.ribbon {
-  height: 34px;
-  background: repeating-linear-gradient(
-    90deg,
-    var(--color-brown) 0 26px,
-    var(--color-cream) 26px 52px
-  );
-}
-.ribbon-sm {
-  height: 14px;
-  background: repeating-linear-gradient(
-    90deg,
-    var(--color-brown) 0 26px,
-    var(--color-cream) 26px 52px
-  );
-}
-
-/* cookie-arch frame */
-.arch {
-  border-radius: 50% 50% 6px 6px / 34% 34% 6px 6px;
-}
-.arch-card {
-  border-radius: 50% 50% 0 0 / 90px 90px 0 0;
-}
-
-@keyframes mannaFadeOut {
-  to {
-    opacity: 0;
-    visibility: hidden;
-  }
-}
-@keyframes mannaScroll {
-  0% {
-    transform: translateY(-100%);
-  }
-  60% {
-    transform: translateY(100%);
-  }
-  100% {
-    transform: translateY(100%);
-  }
-}
-@keyframes mannaSheet {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
+/* keyframes — verbatim from the design file */
 @keyframes mannaDraw {
   to {
     stroke-dashoffset: 0;
@@ -111,11 +67,61 @@ body {
 @keyframes mannaRise {
   from {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translateY(16px) scale(0.96);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
+  }
+}
+@keyframes mannaFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes mannaFadeOut {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+@keyframes mannaKen {
+  from {
+    transform: scale(1.05);
+  }
+  to {
+    transform: scale(1.2) translate(-2%, -3%);
+  }
+}
+@keyframes mannaScroll {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(220%);
+  }
+}
+@keyframes mannaSheet {
+  from {
+    transform: translateY(48px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes mannaIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 @keyframes mannaToast {
@@ -129,43 +135,25 @@ body {
   }
 }
 
-/* scroll-reveal system (applied by useReveal hook) */
-[data-reveal] {
-  opacity: 0;
-}
-[data-reveal].revealed {
-  opacity: 1;
-}
-.reveal-up.revealed {
-  animation: mannaRise 0.9s var(--ease-manna) both;
-}
-.reveal-fade.revealed {
-  transition: opacity 1.1s var(--ease-manna);
-}
-.reveal-scale.revealed {
-  animation: reveal-scale-kf 1s var(--ease-manna) both;
-}
-@keyframes reveal-scale-kf {
-  from {
-    opacity: 0;
-    transform: scale(0.94);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
-  [data-reveal],
-  [data-reveal].revealed {
-    animation: none !important;
-    transition: none !important;
-    opacity: 1;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
+}
+
+/* generic letter-spaced micro-label (auth pages) */
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 500;
 }
 
 /* hide number-input spinners on price fields */

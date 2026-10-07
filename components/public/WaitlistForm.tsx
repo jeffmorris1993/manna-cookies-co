@@ -37,26 +37,38 @@ export default function WaitlistForm({ dropId }: { dropId: string }) {
 
   if (state === "done") {
     return (
-      <p className="mt-10 font-display text-2xl italic text-brown" data-reveal="fade">
+      <div
+        className="font-display italic"
+        style={{ marginTop: 28, fontSize: 20, animation: "mannaIn .5s ease" }}
+      >
         You&apos;re on the list.
-      </p>
+      </div>
     );
   }
 
   return (
-    <form onSubmit={submit} className="mx-auto mt-10 flex max-w-md flex-col gap-3 sm:flex-row">
-      <label className="sr-only" htmlFor="waitlist-contact">
+    <form
+      onSubmit={submit}
+      style={{ marginTop: 28, display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}
+    >
+      <label htmlFor="waitlist-contact" className="sr-only">
         Email or phone
       </label>
       <input
         id="waitlist-contact"
-        type="text"
-        inputMode="email"
-        autoComplete="email"
-        placeholder="Email or phone"
         value={contact}
         onChange={(e) => setContact(e.target.value)}
-        className="flex-1 border border-brown/25 bg-cream-raised px-5 py-4 text-sm text-ink outline-none transition-colors placeholder:text-muted-2 focus:border-brown"
+        placeholder="Email or phone"
+        style={{
+          flex: "1 1 220px",
+          height: 54,
+          border: "1px solid rgba(74,38,22,.35)",
+          background: "#FFFFFF",
+          padding: "0 16px",
+          fontSize: 16,
+          color: "#24150D",
+          outline: "none",
+        }}
       />
       {/* honeypot — hidden from real users, tempting to bots */}
       <div aria-hidden="true" className="absolute -left-[9999px] top-auto h-px w-px overflow-hidden">
@@ -73,11 +85,23 @@ export default function WaitlistForm({ dropId }: { dropId: string }) {
       <button
         type="submit"
         disabled={state === "busy"}
-        className="eyebrow bg-ink px-7 py-4 text-cream transition-all duration-300 hover:tracking-[0.42em] disabled:opacity-60"
+        className="cursor-pointer border-0 disabled:opacity-60"
+        style={{
+          flex: "0 0 auto",
+          height: 54,
+          background: "#24150D",
+          color: "#F5EFE4",
+          padding: "0 24px",
+          fontSize: 12,
+          letterSpacing: ".2em",
+          fontWeight: 500,
+        }}
       >
-        {state === "busy" ? "Joining…" : "Join the Next Drop"}
+        {state === "busy" ? "JOINING…" : "JOIN THE NEXT DROP"}
       </button>
-      {error && <p className="w-full text-sm text-error sm:order-last">{error}</p>}
+      {error && (
+        <p style={{ width: "100%", fontSize: 13, color: "#8A3B1E", margin: 0 }}>{error}</p>
+      )}
     </form>
   );
 }
