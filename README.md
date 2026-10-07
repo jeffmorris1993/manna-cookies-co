@@ -67,3 +67,4 @@ Database changes: add a file under `supabase/migrations/` and run `supabase db p
 ## Owner login
 
 Temporary password is in `.owner-temp-password.txt` (gitignored, local only) — sign in and change it via the forgot-password flow, then delete the file.
+# manna-cookies-co
