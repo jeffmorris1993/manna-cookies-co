@@ -316,6 +316,17 @@ export async function POST(req: Request) {
       // The customer paid — honor the order; the owner reconciles from logs.
     }
 
+    // They're a customer now — clear any waitlist signups under their
+    // phone or email so the owner never announces to someone who already ordered.
+    try {
+      await db
+        .from("waitlist_entries")
+        .delete()
+        .in("contact", [phone, input.email.toLowerCase()]);
+    } catch (wlErr) {
+      console.warn("waitlist_cleanup_failed", wlErr);
+    }
+
     return NextResponse.json({ ok: true, orderNumber, total: reserved.price_cents });
   } catch (err) {
     if (isDecline(err)) {
