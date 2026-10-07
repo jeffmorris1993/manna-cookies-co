@@ -1,7 +1,9 @@
+import { connection } from "next/server";
 import PublicSite from "@/components/public/PublicSite";
 import { getLiveDropView } from "@/lib/live-drop";
 
 export default async function Home() {
+  await connection(); // always render with live availability
   const drop = await getLiveDropView();
 
   if (!drop) {
