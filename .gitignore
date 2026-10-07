@@ -45,3 +45,4 @@ next-env.d.ts
 .vercel
 prototype/
 .idea/
+.owner-temp-password.txt
