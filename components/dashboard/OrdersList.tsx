@@ -6,6 +6,7 @@ import { formatMoney, windowLabel, displayOrderNumber } from "@/lib/format";
 import { PACKAGE_META } from "@/lib/types";
 import type { PackageKind } from "@/lib/types";
 import { useToast } from "./Toast";
+import EmptyState from "./EmptyState";
 
 export type OrderRow = {
   id: string;
@@ -119,10 +120,39 @@ export default function OrdersList({
       </div>
 
       <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-        {filtered.length === 0 && (
-          <div style={{ padding: "40px 0", textAlign: "center", color: "#6E5546" }}>
-            No orders match.
-          </div>
+        {orders.length === 0 && (
+          <EmptyState
+            title="The oven's all yours."
+            sub="No orders yet for this bake. They'll appear here the moment someone reserves their manna."
+          />
+        )}
+        {orders.length > 0 && filtered.length === 0 && (
+          <EmptyState
+            compact
+            title="No orders match."
+            sub="Try a different name, phone number, or filter."
+          >
+            <button
+              onClick={() => {
+                setQ("");
+                setFilter("all");
+              }}
+              className="cursor-pointer"
+              style={{
+                height: 44,
+                padding: "0 20px",
+                borderRadius: 999,
+                border: "1px solid rgba(74,38,22,.3)",
+                background: "transparent",
+                color: "#4A2616",
+                fontSize: 11,
+                letterSpacing: ".16em",
+                fontWeight: 600,
+              }}
+            >
+              CLEAR SEARCH
+            </button>
+          </EmptyState>
         )}
         {filtered.map((o) => {
           const st = STATUS[o.status];

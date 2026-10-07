@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { formatMoney } from "@/lib/format";
+import EmptyState from "./EmptyState";
 
 export type CustomerSummary = {
   id: string;
@@ -47,12 +48,20 @@ export default function CustomerList({ customers }: { customers: CustomerSummary
           outline: "none",
         }}
       />
-      <div style={{ marginTop: 12, background: "#FBF8F1", borderRadius: 16, overflow: "hidden" }}>
-        {filtered.length === 0 && (
-          <div style={{ padding: "40px 0", textAlign: "center", color: "#6E5546", fontSize: 14 }}>
-            No customers yet.
-          </div>
-        )}
+      {customers.length === 0 && (
+        <div style={{ marginTop: 12 }}>
+          <EmptyState
+            title="Your first customer is one drop away."
+            sub="Everyone who reserves cookies shows up here, with their order history and totals."
+          />
+        </div>
+      )}
+      {customers.length > 0 && filtered.length === 0 && (
+        <div style={{ marginTop: 12 }}>
+          <EmptyState compact title="No customers match." sub="Try a different name, phone, or email." />
+        </div>
+      )}
+      <div style={{ marginTop: 12, background: "#FBF8F1", borderRadius: 16, overflow: "hidden", display: filtered.length ? "block" : "none" }}>
         {filtered.map((c) => (
           <Link
             key={c.id}

@@ -85,8 +85,13 @@ export default async function CustomerDetailPage({
       </div>
       <div style={{ marginTop: 8, background: "#FBF8F1", borderRadius: 16, overflow: "hidden" }}>
         {rows.length === 0 && (
-          <div style={{ padding: "32px 0", textAlign: "center", color: "#6E5546", fontSize: 14 }}>
-            No orders yet.
+          <div style={{ padding: "36px 20px", textAlign: "center" }}>
+            <div className="font-display" style={{ fontSize: 18, color: "#24150D" }}>
+              No orders yet.
+            </div>
+            <div style={{ marginTop: 6, fontSize: 13, color: "#6E5546" }}>
+              Their first manna will show up here.
+            </div>
           </div>
         )}
         {rows.map((o) => (

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireOwner } from "@/lib/auth";
 import { getLiveDropView } from "@/lib/live-drop";
 import StatTile from "@/components/dashboard/StatTile";
+import EmptyState from "@/components/dashboard/EmptyState";
 import OpenCloseCard from "@/components/dashboard/OpenCloseCard";
 import DotGrid from "@/components/dashboard/DotGrid";
 
@@ -24,18 +25,30 @@ export default async function DashboardHome() {
         <h1 className="font-display" style={{ fontSize: 30, lineHeight: 1.1 }}>
           Today&apos;s Manna
         </h1>
-        <p style={{ marginTop: 16, background: "#FBF8F1", borderRadius: 16, padding: "24px 20px", fontSize: 14, color: "#6E5546" }}>
-          No drop is live right now. Open the Bake tab to make one live.
-        </p>
-        <Link
-          href="/dashboard/drops"
-          style={{
-            marginTop: 14, display: "block", textAlign: "center", height: 58, lineHeight: "58px",
-            borderRadius: 14, background: "#24150D", color: "#F5EFE4", fontSize: 13, letterSpacing: ".2em", fontWeight: 600,
-          }}
-        >
-          GO TO DROPS
-        </Link>
+        <div style={{ marginTop: 14 }}>
+          <EmptyState
+            title="The oven is resting."
+            sub="No drop is live on the website right now. Make one live from the Bake tab and ordering opens instantly."
+          >
+            <Link
+              href="/dashboard/drops"
+              style={{
+                display: "inline-block",
+                height: 52,
+                lineHeight: "52px",
+                padding: "0 26px",
+                borderRadius: 14,
+                background: "#24150D",
+                color: "#F5EFE4",
+                fontSize: 12,
+                letterSpacing: ".2em",
+                fontWeight: 600,
+              }}
+            >
+              GO TO DROPS
+            </Link>
+          </EmptyState>
+        </div>
       </main>
     );
   }

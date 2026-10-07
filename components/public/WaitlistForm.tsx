@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-export default function WaitlistForm({ dropId }: { dropId: string }) {
+export default function WaitlistForm({ dropId }: { dropId: string | null }) {
   const [contact, setContact] = useState("");
   const [website, setWebsite] = useState(""); // honeypot — real users never fill this
   const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");

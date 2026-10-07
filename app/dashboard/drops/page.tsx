@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireOwner } from "@/lib/auth";
 import { formatMoney, parseISODate } from "@/lib/format";
 import CreateNextDropButton from "@/components/dashboard/CreateNextDropButton";
+import EmptyState from "@/components/dashboard/EmptyState";
 
 /* DSTAT pill styles — verbatim from the design */
 const DSTAT: Record<string, { l: string; bg: string; c: string; b: string }> = {
@@ -102,6 +103,13 @@ export default async function DropsPage() {
           ALL DROPS
         </span>
       </div>
+
+      {sorted.length === 0 && (
+        <EmptyState
+          title="No drops yet."
+          sub="A drop is one week's bake — the cookie, its capacity, pickup windows, and prices."
+        />
+      )}
 
       <div
         style={{
