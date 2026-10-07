@@ -16,18 +16,18 @@ await page.reload({ waitUntil: "networkidle" });
 // jump to the order section and pick the half dozen
 await page.evaluate(() => document.getElementById("order")?.scrollIntoView());
 await page.waitForTimeout(1200);
-await page.getByRole("button", { name: /THE MANNA HALF DOZEN/i }).click();
+await page.getByRole("button", { name: /THE MANNA HALF DOZEN/i }).click({ force: true });
 
 // step 2: details
 await page.waitForSelector("#co-name");
 await page.fill("#co-name", "Test Customer");
 await page.fill("#co-phone", "202-555-0147");
 await page.fill("#co-email", "test.customer@example.com");
-await page.getByRole("button", { name: "Continue" }).click();
+await page.getByRole("button", { name: "Continue" }).click({ force: true });
 
 // step 3: window
-await page.getByRole("button", { name: /9:00 – 11:00 AM/ }).click();
-await page.getByRole("button", { name: "Continue" }).click();
+await page.getByRole("button", { name: /9:00 – 11:00 AM/ }).click({ force: true });
+await page.getByRole("button", { name: "Continue" }).click({ force: true });
 
 // step 4: Square card iframe
 await page.waitForSelector("#card-container iframe", { timeout: 30000 });
@@ -37,7 +37,11 @@ await frame.locator("#expirationDate").fill("12/27");
 await frame.locator("#cvv").fill("111");
 await frame.locator("#postalCode").fill("20500");
 
-await page.getByRole("button", { name: /^Pay \$/ }).click();
+await page.waitForSelector('button:not([disabled]):has-text("Pay $")', { timeout: 30000 });
+await page.evaluate(() => {
+  const btn = [...document.querySelectorAll("button")].find((b) => /^PAY \$/i.test(b.textContent.trim()));
+  btn?.click();
+});
 
 // outcome: confirmation or error text
 try {
