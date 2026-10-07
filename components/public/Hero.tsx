@@ -1,18 +1,64 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
+
+/* shared geometry: 28% vertical overscan so the parallax shift (max ~12% of
+   hero height) can never slide the media off its frame and expose the backdrop.
+   maxWidth:none — Tailwind preflight clamps <video>/<img> to max-width:100%,
+   which silently defeats the 108% overscan. */
+const MEDIA_BOX: React.CSSProperties = {
+  top: "-14%",
+  left: "-4%",
+  width: "108%",
+  height: "128%",
+  maxWidth: "none",
+};
 
 export default function Hero({ onOrder }: { onOrder: (e?: React.MouseEvent) => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [still, setStill] = useState(false); // Low Power Mode etc: show photo
+
+  // iOS Low Power Mode blocks video autoplay. Fall back to the photo, and
+  // retry on the first touch — a user gesture is allowed to start playback.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    let timer = 0;
+
+    const tryPlay = () => {
+      const p = v.play();
+      if (p?.catch) p.catch(() => {});
+    };
+    const onPlaying = () => {
+      setStill(false);
+      window.clearTimeout(timer);
+    };
+    const onFirstTouch = () => tryPlay();
+
+    v.addEventListener("playing", onPlaying);
+    window.addEventListener("touchstart", onFirstTouch, { once: true, passive: true });
+    tryPlay();
+    timer = window.setTimeout(() => {
+      if (v.paused) setStill(true);
+    }, 1500);
+
+    return () => {
+      window.clearTimeout(timer);
+      v.removeEventListener("playing", onPlaying);
+      window.removeEventListener("touchstart", onFirstTouch);
+    };
+  }, []);
+
   return (
     <section
       data-screen-label="Hero"
       className="relative overflow-hidden"
       style={{ height: "100svh", minHeight: 580, background: "#1B0F09", color: "#F5EFE4" }}
     >
-      {/* 28% vertical overscan so the parallax shift (max ~12% of hero height)
-          can never slide the video off its frame and expose the backdrop */}
       <div data-parallax=".12" className="absolute inset-0">
         <video
+          ref={videoRef}
           src="/hero.mp4"
           poster="/cookie-stack.jpg"
           autoPlay
@@ -21,10 +67,17 @@ export default function Hero({ onOrder }: { onOrder: (e?: React.MouseEvent) => v
           playsInline
           preload="metadata"
           className="absolute object-cover"
-          // maxWidth: Tailwind preflight clamps <video> to max-width:100%,
-          // which silently defeats the 108% overscan
-          style={{ top: "-14%", left: "-4%", width: "108%", height: "128%", maxWidth: "none" }}
+          style={MEDIA_BOX}
         />
+        {still && (
+          /* covers the paused video (and iOS's play glyph) with the same shot */
+          <img
+            src="/cookie-stack.jpg"
+            alt=""
+            className="absolute object-cover"
+            style={{ ...MEDIA_BOX, animation: "mannaFade .4s ease" }}
+          />
+        )}
       </div>
       <div
         className="absolute inset-0"

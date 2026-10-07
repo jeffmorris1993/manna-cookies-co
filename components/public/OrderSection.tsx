@@ -18,6 +18,10 @@ export default function OrderSection({
   const unavailTitle = drop.soldOut
     ? "THIS WEEK'S MANNA IS GONE."
     : "ORDERS ARE CLOSED FOR THIS WEEK.";
+  // Closed (not sold out): the closed card IS the section — hide the cookie
+  // showcase so "0 of 60 reserved" noise doesn't sit above "orders are closed".
+  // Sold out keeps the showcase: a full bar over the waitlist is social proof.
+  const showShowcase = !unavailable || drop.soldOut;
 
   return (
     <section id="order" data-screen-label="Order" style={{ background: "#FBF8F1" }}>
@@ -37,6 +41,7 @@ export default function OrderSection({
         >
           ORDER FOR PICKUP
         </div>
+        {showShowcase && (
         <h2
           className="font-display"
           style={{
@@ -53,6 +58,8 @@ export default function OrderSection({
             </span>
           </span>
         </h2>
+        )}
+        {showShowcase && (
         <div
           data-reveal="up"
           data-delay="120"
@@ -61,7 +68,8 @@ export default function OrderSection({
         >
           {drop.cookie}
         </div>
-        {drop.desc.includes("•") ? (
+        )}
+        {showShowcase && (drop.desc.includes("•") ? (
           // ingredient-list style: keep each phrase on one line, break between them
           <div
             data-reveal="up"
@@ -95,8 +103,9 @@ export default function OrderSection({
           >
             {drop.desc}
           </div>
-        )}
+        ))}
 
+        {showShowcase && (
         <div data-reveal="up" data-delay="240" style={{ maxWidth: 520, margin: "40px auto 0" }}>
           <div
             style={{
@@ -122,6 +131,7 @@ export default function OrderSection({
             />
           </div>
         </div>
+        )}
 
         {!unavailable && (
           <>
