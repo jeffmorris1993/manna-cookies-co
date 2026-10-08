@@ -31,12 +31,9 @@ export default function SiteFooter({
           height={128}
           style={{ width: 128, height: 128, display: "block" }}
         />
-        <div style={{ marginTop: 28, fontSize: 10, letterSpacing: ".3em", fontWeight: 500, color: "#8A6440" }}>
-          FOLLOW THE BAKE
-        </div>
         <div
           style={{
-            marginTop: 14,
+            marginTop: 28,
             display: "flex",
             flexWrap: "wrap",
             justifyContent: "center",

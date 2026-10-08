@@ -239,6 +239,47 @@ export async function makeLive(dropId: string): Promise<ActionResult> {
   return { ok: true };
 }
 
+export async function deleteDrop(dropId: string): Promise<ActionResult> {
+  try {
+    await requireOwner();
+  } catch {
+    return fail("Not signed in.");
+  }
+  if (!z.uuid().safeParse(dropId).success) return fail("Invalid request.");
+
+  const admin = supabaseAdmin();
+  const { data: drop } = await admin
+    .from("drops")
+    .select("id, status, photo_url")
+    .eq("id", dropId)
+    .maybeSingle();
+  if (!drop) return fail("Drop not found.");
+  if (drop.status === "live")
+    return fail("This drop is live on the website. Make another drop live first.");
+
+  const { count } = await admin
+    .from("orders")
+    .select("id", { count: "exact", head: true })
+    .eq("drop_id", dropId);
+  if (count && count > 0)
+    return fail("This drop has orders, so it's kept for your records.");
+
+  if (drop.photo_url) {
+    const { data: files } = await admin.storage.from("drop-photos").list(`drops/${dropId}`);
+    if (files?.length) {
+      await admin.storage
+        .from("drop-photos")
+        .remove(files.map((f) => `drops/${dropId}/${f.name}`));
+    }
+  }
+
+  // windows + packages cascade; orders restrict (backstop for the count check above)
+  const { error } = await admin.from("drops").delete().eq("id", dropId);
+  if (error) return fail("Couldn't delete the drop.");
+  revalidateDashboard();
+  return { ok: true };
+}
+
 const DEFAULT_WINDOWS = [
   { starts: "09:00", ends: "11:00" },
   { starts: "11:00", ends: "13:00" },

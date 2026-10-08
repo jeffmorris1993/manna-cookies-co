@@ -7,6 +7,7 @@ import {
   saveDrop,
   makeLive,
   createNextDrop,
+  deleteDrop,
   uploadDropPhoto,
   removeDropPhoto,
 } from "@/app/dashboard/actions";
@@ -351,6 +352,25 @@ export default function DropEditor({
         router.push(`/dashboard/drops/${res.id}`);
       } else toast(res.error ?? "Couldn't create drop");
     });
+
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const onDelete = () => {
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
+    start(async () => {
+      const res = await deleteDrop(drop.id);
+      if (res.ok) {
+        toast("Drop deleted");
+        router.push("/dashboard/drops");
+        router.refresh();
+      } else {
+        toast(res.error ?? "Couldn't delete the drop");
+        setConfirmDelete(false);
+      }
+    });
+  };
 
   const actions: { label: string; bg: string; color: string; onClick: () => void }[] =
     drop.status === "live"
@@ -833,6 +853,28 @@ export default function DropEditor({
           {pending ? "WORKING…" : bt.label}
         </button>
       ))}
+
+      {drop.status !== "live" && (
+        <button
+          disabled={pending}
+          onClick={onDelete}
+          onBlur={() => setConfirmDelete(false)}
+          className="cursor-pointer disabled:opacity-60"
+          style={{
+            height: 54,
+            border: `1px solid ${confirmDelete ? "#8A3B1E" : "rgba(138,59,30,.45)"}`,
+            borderRadius: 14,
+            background: confirmDelete ? "#8A3B1E" : "transparent",
+            color: confirmDelete ? "#F5EFE4" : "#8A3B1E",
+            fontSize: 12,
+            letterSpacing: ".2em",
+            fontWeight: 600,
+            transition: "background .25s,color .25s,border-color .25s",
+          }}
+        >
+          {pending ? "WORKING…" : confirmDelete ? "TAP AGAIN TO DELETE FOREVER" : "DELETE THIS DROP"}
+        </button>
+      )}
     </main>
   );
 }

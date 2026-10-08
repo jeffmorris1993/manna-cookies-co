@@ -58,6 +58,19 @@ textarea {
   font-family: inherit;
 }
 
+/* Follow the Bake social cards — invert to cream on hover */
+.follow-card {
+  border: 1px solid rgba(245, 239, 228, 0.5);
+  color: var(--color-cream);
+  transition:
+    background 0.3s,
+    color 0.3s;
+}
+.follow-card:hover {
+  background: var(--color-cream);
+  color: var(--color-ink);
+}
+
 /* keyframes — verbatim from the design file */
 @keyframes mannaDraw {
   to {

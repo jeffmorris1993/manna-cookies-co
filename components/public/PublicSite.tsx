@@ -11,6 +11,7 @@ import CookieSection from "./CookieSection";
 import MannaStory from "./MannaStory";
 import OrderSection from "./OrderSection";
 import Testimonials from "./Testimonials";
+import FollowSection from "./FollowSection";
 import SiteFooter from "./SiteFooter";
 import StickyOrderBar from "./StickyOrderBar";
 import CheckoutSheet from "@/components/checkout/CheckoutSheet";
@@ -82,6 +83,7 @@ export default function PublicSite({ drop: initialDrop }: { drop: LiveDropView }
         <MannaStory />
         <OrderSection drop={drop} availSeen={availSeen} onSelect={setSheetPkg} />
         <Testimonials />
+        <FollowSection />
       </main>
       <SiteFooter onOrder={goOrder} />
       <StickyOrderBar drop={drop} sheetOpen={sheetPkg !== null} onOrder={openSheetFromBar} />
