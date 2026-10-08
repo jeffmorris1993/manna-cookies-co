@@ -1,36 +1,51 @@
-import Image from "next/image";
-
-const IMG_HOVER =
-  "transition-transform duration-[1.2s] ease-[cubic-bezier(.2,.7,.2,1)] hover:scale-[1.06]";
-
-function Photo({ src, alt, delay }: { src: string; alt: string; delay?: string }) {
-  return (
-    <div
-      data-reveal="up"
-      data-delay={delay}
-      style={{ aspectRatio: "4/5", width: "100%", minWidth: 0, scrollSnapAlign: "start", overflow: "hidden" }}
-    >
-      <Image
-        src={src}
-        alt={alt}
-        width={340}
-        height={425}
-        className={IMG_HOVER}
-        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-      />
-    </div>
-  );
-}
+const REVIEWS = [
+  {
+    name: "KATONDRA P",
+    quote:
+      "Manna Cookies is it! It's the attention to detail that will keep you coming back. Cookies made to BLESS you!",
+  },
+  {
+    name: "JASMIN W",
+    quote: "These cookies are absolutely delicious, each bite is filled with flavor!",
+  },
+  {
+    name: "COREY M",
+    quote: "Manna cookies are truly straight from heaven. Best cookies I've ever had!",
+  },
+  {
+    name: "ANDREW P",
+    quote: "These cookies are amazing! Every order I've received they are all consistent!",
+  },
+  {
+    name: "RAYLYNN H",
+    quote: "These cookies are dangerously good!!!!",
+  },
+  {
+    name: "YOLANDA R",
+    quote:
+      "The chocolate chip cookies were delicious! Rich and buttery, little crisp on outside and soft on inside! I recommend. They are very good!!",
+  },
+  {
+    name: "GREGORY D",
+    quote:
+      "They're soft, delicious and classic. Everything that you would want in a cookie. Simply incredible.",
+  },
+  {
+    name: "TINESHA POLLOCK",
+    quote:
+      "These chocolate chip cookies are the BEST chocolate chip cookies that I've ever had!! They are slightly crispy, chewy on the inside. I don't know if it's the chocolate chips or butter or both; but they taste amazing.",
+  },
+];
 
 function Quote({
   dark,
   quote,
-  source,
+  name,
   delay,
 }: {
   dark: boolean;
   quote: string;
-  source: string;
+  name: string;
   delay?: string;
 }) {
   return (
@@ -49,6 +64,7 @@ function Quote({
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
+        gap: 14,
       }}
     >
       <div className="font-display" style={{ fontSize: 42, lineHeight: 0.6, color: dark ? "#C9A57E" : "#8A6440" }}>
@@ -56,12 +72,27 @@ function Quote({
       </div>
       <div
         className="font-display"
-        style={{ fontSize: "clamp(15px,1.35vw,18px)", lineHeight: 1.35, textWrap: "pretty" }}
+        style={{ fontSize: "clamp(14px,1.25vw,17px)", lineHeight: 1.4, textWrap: "pretty" }}
       >
         {quote}
       </div>
-      <div style={{ fontSize: 10, letterSpacing: ".22em", color: dark ? "#D9C8B3" : "#6E5546" }}>
-        {source}
+      <div>
+        <div
+          aria-label="Rated 5 out of 5 stars"
+          style={{ fontSize: 13, letterSpacing: 4, color: dark ? "#C9A57E" : "#B98B55" }}
+        >
+          ★★★★★
+        </div>
+        <div
+          style={{
+            marginTop: 8,
+            fontSize: 10,
+            letterSpacing: ".22em",
+            color: dark ? "#D9C8B3" : "#6E5546",
+          }}
+        >
+          — {name}
+        </div>
       </div>
     </div>
   );
@@ -123,27 +154,15 @@ export default function Testimonials() {
         </div>
 
         <div className="testi-rail">
-          <Photo src="/customer.jpg" alt="Customer enjoying a Manna cookie" />
-          <Quote
-            dark
-            delay="80"
-            quote="We split a dozen four ways and still argued over the last one."
-            source="@CUSTOMER · INSTAGRAM"
-          />
-          <Photo src="/cookie-broken.jpg" alt="Cookie broken open" delay="160" />
-          <Quote
-            dark={false}
-            delay="240"
-            quote="The brown butter is the real thing. Already planning my next order."
-            source="@CUSTOMER · FACEBOOK"
-          />
-          <Photo src="/sea-salt.jpg" alt="Sea salt on a fresh cookie" delay="160" />
-          <Quote
-            dark
-            delay="240"
-            quote="Ordered a dozen for my mom's birthday. Gone before the candles were lit."
-            source="@CUSTOMER · TEXT MESSAGE"
-          />
+          {REVIEWS.map((r, i) => (
+            <Quote
+              key={r.name}
+              dark={i % 2 === 0}
+              delay={i ? String(Math.min(i * 60, 240)) : undefined}
+              quote={r.quote}
+              name={r.name}
+            />
+          ))}
         </div>
       </div>
     </section>
