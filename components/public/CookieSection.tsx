@@ -95,22 +95,11 @@ export default function CookieSection() {
             <div
               data-reveal="up"
               data-delay="300"
-              style={{
-                marginTop: 32,
-                display: "flex",
-                alignItems: "center",
-                gap: 14,
-                fontSize: 11,
-                letterSpacing: ".26em",
-                color: "#4A2616",
-              }}
+              className="est-rail"
+              style={{ marginTop: 32, color: "#4A2616" }}
             >
-              <span style={{ flex: "0 0 auto", width: 40, height: 1, background: "#4A2616" }} />
-              <span style={{ lineHeight: 1.9 }}>
-                <span style={{ whiteSpace: "nowrap" }}>EST. 2023</span> ·{" "}
-                <span style={{ whiteSpace: "nowrap" }}>SMALL BATCH</span> ·{" "}
-                <span style={{ whiteSpace: "nowrap" }}>MADE TO CRAVE</span>
-              </span>
+              <span className="est-dash" style={{ flex: "0 0 auto", width: 40, height: 1, background: "#4A2616" }} />
+              <span style={{ whiteSpace: "nowrap" }}>EST. 2023 · SMALL BATCH · MADE TO CRAVE</span>
             </div>
           </div>
 

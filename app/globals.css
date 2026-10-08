@@ -58,6 +58,24 @@ textarea {
   font-family: inherit;
 }
 
+/* EST. 2023 rail in the cookie section — dash hides on phones so it stays one line */
+.est-rail {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 11px;
+  letter-spacing: 0.26em;
+}
+@media (max-width: 560px) {
+  .est-rail {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+  }
+  .est-rail .est-dash {
+    display: none;
+  }
+}
+
 /* Follow the Bake social cards — invert to cream on hover */
 .follow-card {
   border: 1px solid rgba(245, 239, 228, 0.5);

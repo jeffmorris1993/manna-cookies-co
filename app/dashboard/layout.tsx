@@ -30,7 +30,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   } catch {
     redirect("/login");
   }
-  const greeting = `LET'S GET BAKING, ${ownerName(user.email).toUpperCase()}`;
+  const firstName = ownerName(user.email);
 
   const { count } = await supabase
     .from("orders")
@@ -52,53 +52,40 @@ export default async function DashboardLayout({ children }: { children: React.Re
           style={{
             maxWidth: 760,
             margin: "0 auto",
-            padding: "22px 18px 6px",
+            padding: "20px 18px 0",
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "flex-start",
+            alignItems: "center",
             gap: 12,
           }}
         >
-          <div>
-            <div
-              style={{
-                fontSize: 11,
-                letterSpacing: ".24em",
-                fontWeight: 500,
-                color: "#8A6440",
-                lineHeight: 1.7,
-              }}
-            >
-              MANNA · <span style={{ whiteSpace: "nowrap" }}>{todayLabel()}</span>
-            </div>
-            <div
-              style={{
-                marginTop: 4,
-                fontSize: 10,
-                letterSpacing: ".2em",
-                fontWeight: 600,
-                color: "#24150D",
-              }}
-            >
-              {greeting}
-            </div>
-          </div>
+          <Image
+            src="/logo.png"
+            alt="Manna Cookies & Co."
+            width={42}
+            height={42}
+            style={{ width: 42, height: 42, display: "block", flex: "0 0 auto" }}
+          />
           <div
             style={{
               display: "flex",
               flexDirection: "column",
               alignItems: "flex-end",
-              gap: 6,
-              flex: "0 0 auto",
+              gap: 5,
+              minWidth: 0,
             }}
           >
-            <Image
-              src="/logo.png"
-              alt="Manna"
-              width={44}
-              height={44}
-              style={{ width: 44, height: 44, display: "block" }}
-            />
+            <div
+              style={{
+                fontSize: 10,
+                letterSpacing: ".22em",
+                fontWeight: 500,
+                color: "#8A6440",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {todayLabel()}
+            </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <Link
                 href="/"
@@ -120,6 +107,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
             </div>
           </div>
         </header>
+        <div style={{ maxWidth: 760, margin: "0 auto", padding: "16px 18px 2px" }}>
+          <div
+            className="font-display"
+            style={{ fontSize: "clamp(22px,5.6vw,28px)", lineHeight: 1.15, color: "#24150D" }}
+          >
+            Let&apos;s get baking, <span style={{ fontStyle: "italic" }}>{firstName}</span>.
+          </div>
+        </div>
         <div style={{ maxWidth: 760, margin: "0 auto", padding: "0 18px" }}>{children}</div>
         <TabBar newOrders={count ?? 0} />
         <AutoRefresh />

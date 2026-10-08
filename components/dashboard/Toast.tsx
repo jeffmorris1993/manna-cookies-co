@@ -25,7 +25,14 @@ export default function ToastProvider({ children }: { children: React.ReactNode 
         <div
           role="status"
           className="fixed bottom-24 left-1/2 z-[70] rounded-full bg-ink px-6 py-3 text-sm text-cream shadow-toast"
-          style={{ transform: "translateX(-50%)", animation: "mannaToast .3s cubic-bezier(.2,.7,.2,1) both" }}
+          style={{
+            transform: "translateX(-50%)",
+            whiteSpace: "nowrap",
+            maxWidth: "calc(100vw - 24px)",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            animation: "mannaToast .3s cubic-bezier(.2,.7,.2,1) both",
+          }}
         >
           {msg}
         </div>
