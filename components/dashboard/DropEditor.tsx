@@ -14,6 +14,7 @@ import { formatMoney, parseISODate, longDate } from "@/lib/format";
 import { deadlineTimestamp, earliestPickupDate } from "@/lib/deadline";
 import { PACKAGE_META, type PackageKind } from "@/lib/types";
 import { useToast } from "./Toast";
+import DatePicker from "./DatePicker";
 
 type EditorDrop = {
   id: string;
@@ -254,13 +255,24 @@ export default function DropEditor({
     }
   };
 
-  const addWindow = () => {
-    const sorted = [...wins].sort((a, b) =>
-      a.date === b.date ? a.starts.localeCompare(b.starts) : a.date.localeCompare(b.date),
-    );
-    const last = sorted[sorted.length - 1];
-    const date = last?.date ?? minPickupDate;
-    let h = last && last.date === date ? Number(last.ends.slice(0, 2)) : 9;
+  // ---- day-grouped window helpers ----
+  const dayDates = [...new Set(wins.map((w) => w.date))].sort();
+  const winsFor = (date: string) =>
+    wins
+      .map((w, i) => ({ w, i }))
+      .filter((x) => x.w.date === date)
+      .sort((a, b) => a.w.starts.localeCompare(b.w.starts));
+
+  const updateWin = (i: number, patch: Partial<EditorWin>) =>
+    setWins(wins.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+
+  const changeDayDate = (oldDate: string, newDate: string) =>
+    setWins(wins.map((w) => (w.date === oldDate ? { ...w, date: newDate } : w)));
+
+  const addTime = (date: string) => {
+    const group = winsFor(date);
+    const last = group[group.length - 1]?.w;
+    let h = last ? Number(last.ends.slice(0, 2)) : 9;
     h = Math.min(h, 21);
     setWins([
       ...wins,
@@ -282,8 +294,28 @@ export default function DropEditor({
     setWins(wins.filter((_, j) => j !== i));
   };
 
-  const updateWin = (i: number, patch: Partial<EditorWin>) =>
-    setWins(wins.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+  const removeDay = (date: string) => {
+    const rest = wins.filter((w) => w.date !== date);
+    if (rest.length === 0) {
+      toast("Keep at least one pickup day");
+      return;
+    }
+    setWins(rest);
+  };
+
+  const addDay = () => {
+    const last = dayDates[dayDates.length - 1];
+    let next: string;
+    if (last) {
+      const dt = new Date(`${last}T12:00:00Z`);
+      dt.setUTCDate(dt.getUTCDate() + 1);
+      next = dt.toISOString().slice(0, 10);
+    } else {
+      next = minPickupDate;
+    }
+    if (next < minPickupDate) next = minPickupDate;
+    setWins([...wins, { id: null, date: next, starts: "09:00", ends: "11:00", full: false }]);
+  };
 
   const save = (then?: "makeLive") =>
     start(async () => {
@@ -568,78 +600,36 @@ export default function DropEditor({
         </div>
       </div>
 
-      {/* pickup windows */}
+      {/* pickup days */}
       <div style={{ background: "#FBF8F1", borderRadius: 16, padding: "16px 18px" }}>
-        <div style={SECTION_LABEL}>PICKUP WINDOWS</div>
+        <div style={SECTION_LABEL}>PICKUP DAYS</div>
         <div style={{ marginTop: 4, fontSize: 13, lineHeight: 1.5, color: "#6E5546" }}>
-          Customers choose one at checkout. Windows can be on different days. Mark a window full
-          to stop new orders for it.
+          Pick a day, then add its time windows. Customers choose one window at checkout; mark a
+          window full to stop new orders for it.
         </div>
-        <div style={{ marginTop: 10, display: "flex", flexDirection: "column" }}>
-          {wins.map((w, i) => (
+
+        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 12 }}>
+          {dayDates.map((date) => (
             <div
-              key={w.id ?? `new-${i}`}
+              key={date}
               style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-                padding: "12px 0",
-                borderBottom: "1px solid rgba(74,38,22,.1)",
+                border: "1px solid rgba(74,38,22,.15)",
+                borderRadius: 12,
+                padding: "12px 12px 10px",
+                background: "#F5EFE4",
               }}
             >
-              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-                <input
-                  type="date"
-                  value={w.date}
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <DatePicker
+                  value={date}
                   min={minPickupDate}
                   disabled={readOnly}
-                  onChange={(e) => e.target.value && updateWin(i, { date: e.target.value })}
-                  className="disabled:opacity-60"
-                  style={{ ...FIELD_INPUT, flex: "1 1 150px", minWidth: 0 }}
+                  onChange={(iso) => changeDayDate(date, iso)}
                 />
-                <div style={{ flex: "2 1 200px", display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-                  <input
-                    type="time"
-                    value={w.starts}
-                    disabled={readOnly}
-                    onChange={(e) => updateWin(i, { starts: e.target.value })}
-                    className="disabled:opacity-60"
-                    style={{ ...FIELD_INPUT, flex: 1, minWidth: 0 }}
-                  />
-                  <span style={{ color: "#6E5546" }}>–</span>
-                  <input
-                    type="time"
-                    value={w.ends}
-                    disabled={readOnly}
-                    onChange={(e) => updateWin(i, { ends: e.target.value })}
-                    className="disabled:opacity-60"
-                    style={{ ...FIELD_INPUT, flex: 1, minWidth: 0 }}
-                  />
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
                 <button
                   disabled={readOnly}
-                  onClick={() => updateWin(i, { full: !w.full })}
-                  className="cursor-pointer disabled:opacity-60"
-                  style={{
-                    flex: 1,
-                    height: 44,
-                    borderRadius: 10,
-                    border: `1px solid ${w.full ? "#24150D" : "rgba(74,38,22,.25)"}`,
-                    background: w.full ? "#24150D" : "#FFFFFF",
-                    color: w.full ? "#F5EFE4" : "#24150D",
-                    fontSize: 11,
-                    letterSpacing: ".14em",
-                    fontWeight: 600,
-                  }}
-                >
-                  {w.full ? "FULL — TAP TO REOPEN" : "OPEN — TAP TO MARK FULL"}
-                </button>
-                <button
-                  disabled={readOnly}
-                  onClick={() => removeWindow(i)}
-                  aria-label="Remove window"
+                  onClick={() => removeDay(date)}
+                  aria-label="Remove this day"
                   className="cursor-pointer disabled:opacity-40"
                   style={{
                     flex: "0 0 44px",
@@ -654,12 +644,102 @@ export default function DropEditor({
                   ×
                 </button>
               </div>
+
+              <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                {winsFor(date).map(({ w, i }) => (
+                  <div
+                    key={w.id ?? `new-${i}`}
+                    style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, paddingLeft: 10 }}
+                  >
+                    <div style={{ flex: "1 1 190px", display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                      <input
+                        type="time"
+                        value={w.starts}
+                        disabled={readOnly}
+                        onChange={(e) => updateWin(i, { starts: e.target.value })}
+                        className="disabled:opacity-60"
+                        style={{ ...FIELD_INPUT, flex: 1, minWidth: 0 }}
+                      />
+                      <span style={{ color: "#6E5546" }}>–</span>
+                      <input
+                        type="time"
+                        value={w.ends}
+                        disabled={readOnly}
+                        onChange={(e) => updateWin(i, { ends: e.target.value })}
+                        className="disabled:opacity-60"
+                        style={{ ...FIELD_INPUT, flex: 1, minWidth: 0 }}
+                      />
+                    </div>
+                    <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
+                      <button
+                        disabled={readOnly}
+                        onClick={() => updateWin(i, { full: !w.full })}
+                        className="cursor-pointer disabled:opacity-60"
+                        style={{
+                          height: 44,
+                          minWidth: 74,
+                          padding: "0 12px",
+                          borderRadius: 10,
+                          border: `1px solid ${w.full ? "#24150D" : "rgba(74,38,22,.25)"}`,
+                          background: w.full ? "#24150D" : "#FFFFFF",
+                          color: w.full ? "#F5EFE4" : "#24150D",
+                          fontSize: 11,
+                          letterSpacing: ".14em",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {w.full ? "FULL" : "OPEN"}
+                      </button>
+                      <button
+                        disabled={readOnly}
+                        onClick={() => removeWindow(i)}
+                        aria-label="Remove time window"
+                        className="cursor-pointer disabled:opacity-40"
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 10,
+                          border: "1px solid rgba(74,38,22,.2)",
+                          background: "#FFFFFF",
+                          color: "#4A2616",
+                          fontSize: 18,
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {!readOnly && (
+                <button
+                  onClick={() => addTime(date)}
+                  className="cursor-pointer"
+                  style={{
+                    marginTop: 10,
+                    marginLeft: 10,
+                    height: 40,
+                    padding: "0 16px",
+                    border: "1px dashed rgba(74,38,22,.4)",
+                    borderRadius: 10,
+                    background: "transparent",
+                    color: "#4A2616",
+                    fontSize: 11,
+                    letterSpacing: ".16em",
+                    fontWeight: 600,
+                  }}
+                >
+                  + ADD TIME
+                </button>
+              )}
             </div>
           ))}
         </div>
+
         {!readOnly && (
           <button
-            onClick={addWindow}
+            onClick={addDay}
             className="cursor-pointer"
             style={{
               marginTop: 12,
@@ -674,7 +754,7 @@ export default function DropEditor({
               fontWeight: 600,
             }}
           >
-            + ADD PICKUP WINDOW
+            + ADD PICKUP DAY
           </button>
         )}
       </div>
