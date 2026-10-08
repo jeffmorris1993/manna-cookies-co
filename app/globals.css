@@ -58,6 +58,19 @@ textarea {
   font-family: inherit;
 }
 
+/* Dashboard header date — compact form on small phones so the row never wraps */
+.date-short {
+  display: none;
+}
+@media (max-width: 430px) {
+  .date-full {
+    display: none;
+  }
+  .date-short {
+    display: inline;
+  }
+}
+
 /* EST. 2023 rail in the cookie section — dash hides on phones so it stays one line */
 .est-rail {
   display: flex;

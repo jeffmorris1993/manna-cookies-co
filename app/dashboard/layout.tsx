@@ -10,11 +10,11 @@ import { signOut } from "@/app/login/actions";
 
 export const metadata = { title: "Owner Dashboard · Manna Cookies & Co.", robots: { index: false } };
 
-function todayLabel() {
+function todayLabel(short = false) {
   return new Date()
     .toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
+      weekday: short ? "short" : "long",
+      month: short ? "short" : "long",
       day: "numeric",
       timeZone: "America/New_York",
     })
@@ -59,22 +59,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
             gap: 12,
           }}
         >
-          <Image
-            src="/logo.png"
-            alt="Manna Cookies & Co."
-            width={42}
-            height={42}
-            style={{ width: 42, height: 42, display: "block", flex: "0 0 auto" }}
-          />
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-end",
-              gap: 5,
-              minWidth: 0,
-            }}
-          >
+          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+            <Image
+              src="/logo.png"
+              alt="Manna Cookies & Co."
+              width={42}
+              height={42}
+              style={{ width: 42, height: 42, display: "block", flex: "0 0 auto" }}
+            />
             <div
               style={{
                 fontSize: 10,
@@ -84,27 +76,28 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 whiteSpace: "nowrap",
               }}
             >
-              {todayLabel()}
+              <span className="date-full">{todayLabel()}</span>
+              <span className="date-short">{todayLabel(true)}</span>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <Link
-                href="/"
-                style={{ fontSize: 9, letterSpacing: ".18em", color: "#8A7466", fontWeight: 600 }}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flex: "0 0 auto" }}>
+            <Link
+              href="/"
+              style={{ fontSize: 9, letterSpacing: ".18em", color: "#8A7466", fontWeight: 600 }}
+            >
+              VIEW SITE
+            </Link>
+            <span aria-hidden style={{ fontSize: 9, color: "#C9B8A6" }}>
+              ·
+            </span>
+            <form action={signOut} style={{ display: "flex" }}>
+              <button
+                className="cursor-pointer border-0 bg-transparent"
+                style={{ fontSize: 9, letterSpacing: ".18em", color: "#8A7466", fontWeight: 600, padding: 0 }}
               >
-                VIEW SITE
-              </Link>
-              <span aria-hidden style={{ fontSize: 9, color: "#C9B8A6" }}>
-                ·
-              </span>
-              <form action={signOut} style={{ display: "flex" }}>
-                <button
-                  className="cursor-pointer border-0 bg-transparent"
-                  style={{ fontSize: 9, letterSpacing: ".18em", color: "#8A7466", fontWeight: 600, padding: 0 }}
-                >
-                  SIGN OUT
-                </button>
-              </form>
-            </div>
+                SIGN OUT
+              </button>
+            </form>
           </div>
         </header>
         <div style={{ maxWidth: 760, margin: "0 auto", padding: "16px 18px 2px" }}>
