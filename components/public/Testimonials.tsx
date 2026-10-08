@@ -53,7 +53,7 @@ function Quote({
       data-reveal="up"
       data-delay={delay}
       style={{
-        aspectRatio: "4/5",
+        minHeight: 290,
         width: "100%",
         minWidth: 0,
         scrollSnapAlign: "start",
