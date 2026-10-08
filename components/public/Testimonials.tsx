@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
 const REVIEWS = [
   {
     name: "KATONDRA P",
@@ -37,52 +41,62 @@ const REVIEWS = [
   },
 ];
 
+function Stars({ gold }: { gold: string }) {
+  return (
+    <div aria-label="Rated 5 out of 5 stars" style={{ fontSize: 13, letterSpacing: 4, color: gold }}>
+      ★★★★★
+    </div>
+  );
+}
+
 function Quote({
   dark,
   quote,
   name,
   delay,
+  onOpen,
 }: {
   dark: boolean;
   quote: string;
   name: string;
   delay?: string;
+  onOpen: () => void;
 }) {
   return (
-    <div
+    <button
       data-reveal="up"
       data-delay={delay}
+      onClick={onOpen}
+      aria-label={`Read the full review from ${name}`}
+      className="cursor-pointer"
       style={{
-        minHeight: 290,
+        aspectRatio: "4/5",
         width: "100%",
         minWidth: 0,
         scrollSnapAlign: "start",
         background: dark ? "#24150D" : "#FBF8F1",
-        color: dark ? "#F5EFE4" : undefined,
-        border: dark ? undefined : "1px solid rgba(74,38,22,.25)",
+        color: dark ? "#F5EFE4" : "#24150D",
+        border: dark ? 0 : "1px solid rgba(74,38,22,.25)",
         padding: "clamp(16px,1.8vw,24px)",
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
         gap: 14,
+        textAlign: "left",
+        font: "inherit",
       }}
     >
       <div className="font-display" style={{ fontSize: 42, lineHeight: 0.6, color: dark ? "#C9A57E" : "#8A6440" }}>
         &ldquo;
       </div>
       <div
-        className="font-display"
+        className="font-display review-clamp"
         style={{ fontSize: "clamp(14px,1.25vw,17px)", lineHeight: 1.4, textWrap: "pretty" }}
       >
         {quote}
       </div>
       <div>
-        <div
-          aria-label="Rated 5 out of 5 stars"
-          style={{ fontSize: 13, letterSpacing: 4, color: dark ? "#C9A57E" : "#B98B55" }}
-        >
-          ★★★★★
-        </div>
+        <Stars gold={dark ? "#C9A57E" : "#B98B55"} />
         <div
           style={{
             marginTop: 8,
@@ -94,11 +108,104 @@ function Quote({
           — {name}
         </div>
       </div>
+    </button>
+  );
+}
+
+function ReviewLightbox({ review, onClose }: { review: (typeof REVIEWS)[number]; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 80,
+        background: "rgba(20,11,6,.62)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20,
+        animation: "mannaFade .25s ease",
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Review from ${review.name}`}
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          position: "relative",
+          width: "100%",
+          maxWidth: 560,
+          maxHeight: "85svh",
+          overflowY: "auto",
+          background: "#FBF8F1",
+          color: "#24150D",
+          border: "1px solid rgba(74,38,22,.3)",
+          padding: "clamp(28px,5vw,44px)",
+          animation: "mannaSheet .35s cubic-bezier(.2,.7,.2,1) both",
+        }}
+      >
+        <button
+          onClick={onClose}
+          aria-label="Close review"
+          className="cursor-pointer"
+          style={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            width: 40,
+            height: 40,
+            borderRadius: "50%",
+            border: "1px solid rgba(74,38,22,.25)",
+            background: "transparent",
+            color: "#4A2616",
+            fontSize: 18,
+          }}
+        >
+          ×
+        </button>
+        <div className="font-display" style={{ fontSize: 56, lineHeight: 0.6, color: "#8A6440" }}>
+          &ldquo;
+        </div>
+        <div
+          className="font-display"
+          style={{
+            marginTop: 18,
+            fontSize: "clamp(19px,3vw,26px)",
+            lineHeight: 1.4,
+            textWrap: "pretty",
+          }}
+        >
+          {review.quote}
+        </div>
+        <div style={{ marginTop: 24 }}>
+          <Stars gold="#B98B55" />
+          <div style={{ marginTop: 10, fontSize: 11, letterSpacing: ".22em", color: "#6E5546" }}>
+            — {review.name}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
 export default function Testimonials() {
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+
   return (
     <section
       data-screen-label="Social"
@@ -161,10 +268,15 @@ export default function Testimonials() {
               delay={i ? String(Math.min(i * 60, 240)) : undefined}
               quote={r.quote}
               name={r.name}
+              onOpen={() => setOpenIdx(i)}
             />
           ))}
         </div>
       </div>
+
+      {openIdx !== null && (
+        <ReviewLightbox review={REVIEWS[openIdx]} onClose={() => setOpenIdx(null)} />
+      )}
     </section>
   );
 }
