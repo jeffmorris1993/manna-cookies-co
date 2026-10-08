@@ -3,7 +3,8 @@ import { checkoutSchema } from "@/lib/schemas";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { squareClient, SQUARE_LOCATION_ID } from "@/lib/square";
 import { allowRequest, clientIp } from "@/lib/ratelimit";
-import { normalizePhone, displayOrderNumber } from "@/lib/format";
+import { normalizePhone, displayOrderNumber, longDate, windowLabel } from "@/lib/format";
+import { sendOrderConfirmation } from "@/lib/email";
 import { PACKAGE_META } from "@/lib/types";
 import { etOffset } from "@/lib/deadline";
 import { SquareError } from "square";
@@ -164,6 +165,10 @@ export async function POST(req: Request) {
   // ---- Stage A: Square customer + order (no money moves here) ----
   let squareCustomerId: string | undefined;
   let squareOrderId: string | undefined;
+  let checkoutCtx: {
+    dropRow: { cookie: string; pickup_date: string } | null;
+    winRow: { starts: string; ends: string } | null;
+  } = { dropRow: null, winRow: null };
   try {
     const search = await square.customers.search({
       query: { filter: { phoneNumber: { exact: phone } } },
@@ -199,8 +204,9 @@ export async function POST(req: Request) {
 
     const [{ data: dropRow }, { data: winRow }] = await Promise.all([
       db.from("drops").select("cookie, pickup_date").eq("id", input.dropId).single(),
-      db.from("pickup_windows").select("starts").eq("id", input.windowId).single(),
+      db.from("pickup_windows").select("starts, ends").eq("id", input.windowId).single(),
     ]);
+    checkoutCtx = { dropRow, winRow };
 
     // Pickup fulfillment: makes the order visible in the Square dashboard's
     // Orders view and carries the pickup time into Square's own tooling.
@@ -325,6 +331,26 @@ export async function POST(req: Request) {
         .in("contact", [phone, input.email.toLowerCase()]);
     } catch (wlErr) {
       console.warn("waitlist_cleanup_failed", wlErr);
+    }
+
+    // Branded confirmation email with the calendar invite (never blocks checkout).
+    if (checkoutCtx.dropRow && checkoutCtx.winRow) {
+      const starts = checkoutCtx.winRow.starts.slice(0, 5);
+      const ends = checkoutCtx.winRow.ends.slice(0, 5);
+      await sendOrderConfirmation({
+        to: input.email.toLowerCase(),
+        name: input.name,
+        orderNumber,
+        cookie: checkoutCtx.dropRow.cookie,
+        packageName: pkgName,
+        cookieCount: reserved.cookie_count,
+        totalCents: reserved.price_cents,
+        pickupDateLabel: longDate(checkoutCtx.dropRow.pickup_date),
+        windowLabel: windowLabel(starts, ends),
+        pickupDateISO: checkoutCtx.dropRow.pickup_date,
+        windowStart: starts,
+        windowEnd: ends,
+      });
     }
 
     return NextResponse.json({ ok: true, orderNumber, total: reserved.price_cents });

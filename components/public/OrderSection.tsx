@@ -5,6 +5,94 @@ import type { LiveDropView, PackageKind } from "@/lib/types";
 import { formatMoney } from "@/lib/format";
 import WaitlistForm from "./WaitlistForm";
 
+const EYEBROW: React.CSSProperties = {
+  fontSize: 11,
+  letterSpacing: ".42em",
+  fontWeight: 500,
+  color: "#8A6440",
+};
+
+function Desc({ text, align }: { text: string; align: "center" | "left" }) {
+  if (text.includes("•")) {
+    return (
+      <div
+        data-reveal="up"
+        data-delay="180"
+        style={{ marginTop: 10, fontSize: 13, letterSpacing: ".2em", lineHeight: 1.6, color: "#5A4334" }}
+      >
+        {text.split("•").map((part, i, arr) => (
+          <span key={i}>
+            <span style={part.trim().length <= 32 ? { whiteSpace: "nowrap" } : undefined}>
+              {part.trim()}
+            </span>
+            {i < arr.length - 1 && <span> • </span>}
+          </span>
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div
+      data-reveal="up"
+      data-delay="180"
+      style={{
+        margin: align === "center" ? "12px auto 0" : "12px 0 0",
+        maxWidth: 440,
+        fontSize: 14,
+        letterSpacing: ".08em",
+        lineHeight: 1.7,
+        color: "#5A4334",
+        whiteSpace: "pre-line",
+        textWrap: "pretty",
+      }}
+    >
+      {text}
+    </div>
+  );
+}
+
+function AvailBar({
+  drop,
+  availSeen,
+  align,
+}: {
+  drop: LiveDropView;
+  availSeen: boolean;
+  align: "center" | "left";
+}) {
+  return (
+    <div
+      data-reveal="up"
+      data-delay="240"
+      style={{ maxWidth: 520, margin: align === "center" ? "40px auto 0" : "36px 0 0" }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 12,
+          fontSize: 11,
+          letterSpacing: ".2em",
+          fontWeight: 500,
+        }}
+      >
+        <span>{drop.availLine}</span>
+        <span style={{ color: "#8A6440" }}>{drop.pickupShort}</span>
+      </div>
+      <div style={{ marginTop: 12, height: 3, background: "rgba(74,38,22,.14)", overflow: "hidden" }}>
+        <div
+          style={{
+            height: "100%",
+            width: `${availSeen ? drop.pct : 0}%`,
+            background: "#4A2616",
+            transition: "width 1.8s cubic-bezier(.2,.7,.2,1)",
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function OrderSection({
   drop,
   availSeen,
@@ -15,14 +103,14 @@ export default function OrderSection({
   onSelect: (kind: PackageKind) => void;
 }) {
   const unavailable = !drop.orderable;
-  // sold out → "gone"; closed by the owner or past the deadline → "closed"
   const unavailTitle = drop.soldOut
     ? "THIS WEEK'S MANNA IS GONE."
     : "ORDERS ARE CLOSED FOR THIS WEEK.";
-  // Closed (not sold out): the closed card IS the section — hide the cookie
-  // showcase so "0 of 60 reserved" noise doesn't sit above "orders are closed".
-  // Sold out keeps the showcase: a full bar over the waitlist is social proof.
+  // Closed (not sold out): the closed card IS the section. Sold out keeps the
+  // showcase — a full bar over the waitlist is social proof.
   const showShowcase = !unavailable || drop.soldOut;
+  // Design's "side by side" layout whenever the drop has a photo.
+  const split = showShowcase && !!drop.photoUrl;
 
   return (
     <section id="order" data-screen-label="Order" style={{ background: "#FBF8F1" }}>
@@ -33,152 +121,120 @@ export default function OrderSection({
         }}
       />
       <div
-        className="text-center"
-        style={{ maxWidth: 1180, margin: "0 auto", padding: "clamp(80px,10vw,140px) clamp(20px,5vw,64px)" }}
+        style={{
+          maxWidth: 1180,
+          margin: "0 auto",
+          padding: "clamp(80px,10vw,140px) clamp(20px,5vw,64px)",
+          textAlign: "center",
+        }}
       >
-        <div
-          data-reveal="fade"
-          style={{ fontSize: 11, letterSpacing: ".42em", fontWeight: 500, color: "#8A6440" }}
-        >
-          ORDER FOR PICKUP
-        </div>
-        {showShowcase && (
-        <h2
-          className="font-display"
-          style={{
-            margin: "20px 0 0",
-            fontWeight: 500,
-            fontSize: "clamp(40px,7vw,88px)",
-            lineHeight: 1,
-            letterSpacing: ".02em",
-          }}
-        >
-          <span style={{ display: "block", overflow: "hidden", paddingBottom: ".06em" }}>
-            <span data-reveal="mask" style={{ display: "block" }}>
-              THIS WEEK&apos;S MANNA
-            </span>
-          </span>
-        </h2>
-        )}
-        {showShowcase && (
-        <div
-          data-reveal="up"
-          data-delay="120"
-          className="font-display italic"
-          style={{ marginTop: 22, fontSize: "clamp(22px,3vw,30px)" }}
-        >
-          {drop.cookie}
-        </div>
-        )}
-        {showShowcase && (drop.desc.includes("•") ? (
-          // ingredient-list style: keep each phrase on one line, break between them
+        {!showShowcase && <div data-reveal="fade" style={EYEBROW}>ORDER FOR PICKUP</div>}
+
+        {split && (
           <div
-            data-reveal="up"
-            data-delay="180"
-            style={{ marginTop: 10, fontSize: 13, letterSpacing: ".2em", color: "#5A4334" }}
-          >
-            {drop.desc.split("•").map((part, i, arr) => (
-              <span key={i}>
-                <span style={part.trim().length <= 32 ? { whiteSpace: "nowrap" } : undefined}>
-                  {part.trim()}
-                </span>
-                {i < arr.length - 1 && <span> • </span>}
-              </span>
-            ))}
-          </div>
-        ) : (
-          // free-form description: respect the owner's line breaks, wrap normally
-          <div
-            data-reveal="up"
-            data-delay="180"
             style={{
-              margin: "12px auto 0",
-              maxWidth: 440,
-              fontSize: 14,
-              letterSpacing: ".08em",
-              lineHeight: 1.7,
-              color: "#5A4334",
-              whiteSpace: "pre-line",
-              textWrap: "pretty",
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,340px),1fr))",
+              gap: "clamp(32px,5vw,72px)",
+              alignItems: "center",
+              textAlign: "left",
             }}
           >
-            {drop.desc}
-          </div>
-        ))}
-
-        {showShowcase && drop.photoUrl && (
-          <div data-reveal="scale" style={{ margin: "36px auto 0", width: "min(72vw, 300px)" }}>
             <div
-              style={{
-                aspectRatio: "1",
-                borderRadius: "50% 50% 6px 6px / 38% 38% 6px 6px",
-                overflow: "hidden",
-                border: "1px solid rgba(74,38,22,.4)",
-                padding: 8,
-                background: "#F5EFE4",
-              }}
+              data-reveal="scale"
+              style={{ aspectRatio: "4/5", overflow: "hidden", maxHeight: 620, position: "relative" }}
             >
-              <div
+              <Image
+                src={drop.photoUrl!}
+                alt={`This week's cookie — ${drop.cookie}`}
+                fill
+                sizes="(max-width: 800px) 92vw, 560px"
+                style={{ objectFit: "cover" }}
+              />
+            </div>
+            <div>
+              <div data-reveal="fade" style={EYEBROW}>
+                ORDER FOR PICKUP
+              </div>
+              <h2
+                className="font-display"
                 style={{
-                  position: "relative",
-                  width: "100%",
-                  height: "100%",
-                  overflow: "hidden",
-                  borderRadius: "50% 50% 2px 2px / 36% 36% 2px 2px",
+                  margin: "20px 0 0",
+                  fontWeight: 500,
+                  fontSize: "clamp(38px,5.4vw,72px)",
+                  lineHeight: 1,
+                  letterSpacing: ".02em",
                 }}
               >
-                <Image
-                  src={drop.photoUrl}
-                  alt={drop.cookie}
-                  fill
-                  sizes="300px"
-                  style={{ objectFit: "cover" }}
-                />
+                <span style={{ display: "block", overflow: "hidden", paddingBottom: ".06em" }}>
+                  <span data-reveal="mask" style={{ display: "block" }}>
+                    THIS WEEK&apos;S MANNA
+                  </span>
+                </span>
+              </h2>
+              <div
+                data-reveal="fade"
+                data-delay="120"
+                style={{ marginTop: 28, width: 40, height: 1, background: "#4A2616" }}
+              />
+              <div
+                data-reveal="up"
+                data-delay="120"
+                className="font-display italic"
+                style={{ marginTop: 24, fontSize: "clamp(22px,3vw,30px)" }}
+              >
+                {drop.cookie}
               </div>
+              <Desc text={drop.desc} align="left" />
+              <AvailBar drop={drop} availSeen={availSeen} align="left" />
             </div>
           </div>
         )}
 
-        {showShowcase && (
-        <div data-reveal="up" data-delay="240" style={{ maxWidth: 520, margin: "40px auto 0" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              fontSize: 11,
-              letterSpacing: ".2em",
-              fontWeight: 500,
-            }}
-          >
-            <span>{drop.availLine}</span>
-            <span style={{ color: "#8A6440" }}>{drop.pickupShort}</span>
-          </div>
-          <div style={{ marginTop: 12, height: 3, background: "rgba(74,38,22,.14)", overflow: "hidden" }}>
-            <div
+        {showShowcase && !split && (
+          <>
+            <div data-reveal="fade" style={EYEBROW}>
+              ORDER FOR PICKUP
+            </div>
+            <h2
+              className="font-display"
               style={{
-                height: "100%",
-                width: `${availSeen ? drop.pct : 0}%`,
-                background: "#4A2616",
-                transition: "width 1.8s cubic-bezier(.2,.7,.2,1)",
+                margin: "20px 0 0",
+                fontWeight: 500,
+                fontSize: "clamp(40px,7vw,88px)",
+                lineHeight: 1,
+                letterSpacing: ".02em",
               }}
-            />
-          </div>
-        </div>
+            >
+              <span style={{ display: "block", overflow: "hidden", paddingBottom: ".06em" }}>
+                <span data-reveal="mask" style={{ display: "block" }}>
+                  THIS WEEK&apos;S MANNA
+                </span>
+              </span>
+            </h2>
+            <div
+              data-reveal="up"
+              data-delay="120"
+              className="font-display italic"
+              style={{ marginTop: 22, fontSize: "clamp(22px,3vw,30px)" }}
+            >
+              {drop.cookie}
+            </div>
+            <Desc text={drop.desc} align="center" />
+            <AvailBar drop={drop} availSeen={availSeen} align="center" />
+          </>
         )}
 
         {!unavailable && (
           <>
             <div
-              className="text-center"
               style={{
                 marginTop: 56,
                 display: "grid",
-                // cards cap at 340px and center, so 1 or 2 enabled packages
-                // don't stretch into billboard-width arches
                 gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,200px),340px))",
                 justifyContent: "center",
                 gap: "clamp(16px,2vw,28px)",
+                textAlign: "center",
               }}
             >
               {drop.packages.map((pkg, i) => {

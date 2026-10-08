@@ -140,17 +140,71 @@ input,textarea{font-family:inherit}
   <section id="order" ref="{{ orderRef }}" data-screen-label="Order" style="background:#FBF8F1">
     <div style="height:34px;background:repeating-linear-gradient(90deg,#4A2616 0 26px,#FBF8F1 26px 52px)"></div>
     <div style="max-width:1180px;margin:0 auto;padding:clamp(80px,10vw,140px) clamp(20px,5vw,64px);text-align:center">
-      <div data-reveal="fade" style="font-size:11px;letter-spacing:.42em;font-weight:500;color:#8A6440">ORDER FOR PICKUP</div>
-      <h2 style="margin:20px 0 0;font-family:'Playfair Display',serif;font-weight:500;font-size:clamp(40px,7vw,88px);line-height:1;letter-spacing:.02em">
-        <span style="display:block;overflow:hidden;padding-bottom:.06em"><span data-reveal="mask" style="display:block">THIS WEEK'S MANNA</span></span>
-      </h2>
-      <div data-reveal="up" data-delay="120" style="margin-top:22px;font-family:'Playfair Display',serif;font-size:clamp(22px,3vw,30px);font-style:italic">{{ cookieName }}</div>
-      <div data-reveal="up" data-delay="180" style="margin-top:10px;font-size:13px;letter-spacing:.2em;color:#5A4334">{{ dropDesc }}</div>
-
-      <div data-reveal="up" data-delay="240" style="max-width:520px;margin:40px auto 0">
-        <div style="display:flex;justify-content:space-between;gap:12px;font-size:11px;letter-spacing:.2em;font-weight:500"><span>{{ availLine }}</span><span style="color:#8A6440">{{ pickupShort }}</span></div>
-        <div style="margin-top:12px;height:3px;background:rgba(74,38,22,.14);overflow:hidden"><div style="height:100%;width:{{ barW }};background:#4A2616;transition:width 1.8s cubic-bezier(.2,.7,.2,1)"></div></div>
+      <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;margin:-40px auto 48px;padding:6px;border:1px dashed rgba(74,38,22,.35);border-radius:999px;width:fit-content;max-width:100%">
+        <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;color:#6E5546;padding:0 8px">photo layout</span>
+        <sc-for list="{{ photoOpts }}" as="o" hint-placeholder-count="4">
+          <button onClick="{{ o.onClick }}" style="height:34px;padding:0 14px;border-radius:999px;border:0;background:{{ o.bg }};color:{{ o.color }};font-size:11px;letter-spacing:.12em;font-weight:500;cursor:pointer">{{ o.label }}</button>
+        </sc-for>
       </div>
+
+      <sc-if value="{{ pArch }}" hint-placeholder-val="{{ true }}">
+        <div style="animation:mannaIn .5s ease">
+          <div style="font-size:11px;letter-spacing:.42em;font-weight:500;color:#8A6440">ORDER FOR PICKUP</div>
+          <h2 style="margin:20px 0 0;font-family:'Playfair Display',serif;font-weight:500;font-size:clamp(40px,7vw,88px);line-height:1;letter-spacing:.02em">THIS WEEK'S MANNA</h2>
+          <div style="margin:40px auto 0;width:min(78%,340px);aspect-ratio:4/5;border-radius:50% 50% 6px 6px / 34% 34% 6px 6px;border:1px solid rgba(74,38,22,.4);padding:10px;background:#F5EFE4">
+            <div style="width:100%;height:100%;overflow:hidden;border-radius:50% 50% 2px 2px / 32% 32% 2px 2px"><img src="{{ weekPhoto }}" alt="This week's cookie" style="width:100%;height:100%;object-fit:cover;display:block"></div>
+          </div>
+          <div style="margin-top:28px;font-family:'Playfair Display',serif;font-size:clamp(22px,3vw,30px);font-style:italic">{{ cookieName }}</div>
+          <div style="margin-top:10px;font-size:13px;letter-spacing:.2em;line-height:1.6;color:#5A4334">{{ dropDesc }}</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ pSplit }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:clamp(32px,5vw,72px);align-items:center;text-align:left;animation:mannaIn .5s ease">
+          <div style="aspect-ratio:4/5;overflow:hidden;max-height:620px"><img src="{{ weekPhoto }}" alt="This week's cookie" style="width:100%;height:100%;object-fit:cover;display:block"></div>
+          <div>
+            <div style="font-size:11px;letter-spacing:.42em;font-weight:500;color:#8A6440">ORDER FOR PICKUP</div>
+            <h2 style="margin:20px 0 0;font-family:'Playfair Display',serif;font-weight:500;font-size:clamp(38px,5.4vw,72px);line-height:1;letter-spacing:.02em">THIS WEEK'S MANNA</h2>
+            <div style="margin-top:28px;width:40px;height:1px;background:#4A2616"></div>
+            <div style="margin-top:24px;font-family:'Playfair Display',serif;font-size:clamp(22px,3vw,30px);font-style:italic">{{ cookieName }}</div>
+            <div style="margin-top:10px;font-size:13px;letter-spacing:.2em;line-height:1.6;color:#5A4334">{{ dropDesc }}</div>
+            <div style="margin-top:36px;max-width:520px"><div style="display:flex;justify-content:space-between;gap:12px;font-size:11px;letter-spacing:.2em;font-weight:500"><span>{{ availLine }}</span><span style="color:#8A6440">{{ pickupShort }}</span></div>
+        <div style="margin-top:12px;height:3px;background:rgba(74,38,22,.14);overflow:hidden"><div style="height:100%;width:{{ barW }};background:#4A2616;transition:width 1.8s cubic-bezier(.2,.7,.2,1)"></div></div></div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ pBanner }}" hint-placeholder-val="{{ false }}">
+        <div style="margin:0 calc(50% - 50vw);position:relative;height:clamp(380px,62vh,620px);overflow:hidden;color:#F5EFE4;animation:mannaIn .5s ease">
+          <img src="{{ weekPhoto }}" alt="This week's cookie" style="width:100%;height:100%;object-fit:cover;display:block">
+          <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(27,15,9,.25) 0%,rgba(27,15,9,.35) 45%,rgba(27,15,9,.85) 100%)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;padding:0 clamp(20px,5vw,64px) clamp(32px,5vw,56px);display:flex;flex-direction:column;align-items:center">
+            <div style="font-size:11px;letter-spacing:.42em;font-weight:500;color:#E3CBA8">ORDER FOR PICKUP</div>
+            <h2 style="margin:16px 0 0;font-family:'Playfair Display',serif;font-weight:500;font-size:clamp(38px,7vw,88px);line-height:1;letter-spacing:.02em">THIS WEEK'S MANNA</h2>
+            <div style="margin-top:16px;font-family:'Playfair Display',serif;font-size:clamp(22px,3vw,30px);font-style:italic">{{ cookieName }}</div>
+            <div style="margin-top:10px;font-size:13px;letter-spacing:.2em;line-height:1.6;color:#E9DCCB">{{ dropDesc }}</div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ pCircle }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:mannaIn .5s ease">
+          <div style="font-size:11px;letter-spacing:.42em;font-weight:500;color:#8A6440">ORDER FOR PICKUP</div>
+          <h2 style="margin:20px 0 0;font-family:'Playfair Display',serif;font-weight:500;font-size:clamp(40px,7vw,88px);line-height:1;letter-spacing:.02em">THIS WEEK'S MANNA</h2>
+          <div style="margin:40px auto 0;width:min(72%,320px);aspect-ratio:1;border-radius:50%;border:1px solid rgba(74,38,22,.45);padding:12px">
+            <div style="width:100%;height:100%;border-radius:50%;border:3px solid #4A2616;padding:8px">
+              <div style="width:100%;height:100%;border-radius:50%;overflow:hidden"><img src="{{ weekPhoto }}" alt="This week's cookie, from above" style="width:100%;height:100%;object-fit:cover;display:block"></div>
+            </div>
+          </div>
+          <div style="margin-top:28px;font-family:'Playfair Display',serif;font-size:clamp(22px,3vw,30px);font-style:italic">{{ cookieName }}</div>
+          <div style="margin-top:10px;font-size:13px;letter-spacing:.2em;line-height:1.6;color:#5A4334">{{ dropDesc }}</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ pNotSplit }}" hint-placeholder-val="{{ true }}">
+        <div style="max-width:520px;margin:40px auto 0"><div style="display:flex;justify-content:space-between;gap:12px;font-size:11px;letter-spacing:.2em;font-weight:500"><span>{{ availLine }}</span><span style="color:#8A6440">{{ pickupShort }}</span></div>
+        <div style="margin-top:12px;height:3px;background:rgba(74,38,22,.14);overflow:hidden"><div style="height:100%;width:{{ barW }};background:#4A2616;transition:width 1.8s cubic-bezier(.2,.7,.2,1)"></div></div></div>
+      </sc-if>
 
       <sc-if value="{{ isOrderable }}" hint-placeholder-val="{{ true }}">
         <div style="margin-top:56px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:clamp(16px,2vw,28px);text-align:center">
@@ -772,7 +826,7 @@ input,textarea{font-family:inherit}
 </sc-if>
 
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;startMode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;web&quot;,&quot;dash&quot;,&quot;next&quot;],&quot;default&quot;:&quot;web&quot;,&quot;tsType&quot;:&quot;'web'|'dash'|'next'&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;inventory&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;live&quot;,&quot;low&quot;,&quot;soldout&quot;],&quot;default&quot;:&quot;live&quot;,&quot;tsType&quot;:&quot;'live'|'low'|'soldout'&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;alwaysIntro&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Prototype&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;startMode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;web&quot;,&quot;dash&quot;,&quot;next&quot;],&quot;default&quot;:&quot;web&quot;,&quot;tsType&quot;:&quot;'web'|'dash'|'next'&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;inventory&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;live&quot;,&quot;low&quot;,&quot;soldout&quot;],&quot;default&quot;:&quot;live&quot;,&quot;tsType&quot;:&quot;'live'|'low'|'soldout'&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;alwaysIntro&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;weekPhotoLayout&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;arch&quot;,&quot;split&quot;,&quot;banner&quot;,&quot;circle&quot;],&quot;default&quot;:&quot;arch&quot;,&quot;tsType&quot;:&quot;'arch'|'split'|'banner'|'circle'&quot;,&quot;section&quot;:&quot;This Week's Manna&quot;}}">
 const PK=[{id:'three',title:'3-PACK',name:'3-Pack',sub:'3 Cookies',count:3},{id:'half',title:'THE MANNA HALF DOZEN',name:'The Manna Half Dozen',sub:'6 Cookies',count:6},{id:'dozen',title:'THE MANNA DOZEN',name:'The Manna Dozen',sub:'12 Cookies',count:12}];
 const PKM=Object.fromEntries(PK.map(p=>[p.id,p]));
 const W=(id,start,end,full)=>({id,start,end,full:!!full});
@@ -817,7 +871,7 @@ class Component extends DCLogic {
     return {mode,intro:mode==='web'&&(!seen||!!this.props.alwaysIntro),tab:'home',orders:SEED,cust:CUST,
       drops:[mkDrop('d1',BB,BBD,'2026-09-12',96,'complete',96,448),mkDrop('d2',BB,BBD,'2026-09-19',108,'complete',92,428),mkDrop('d3','Toasted Pecan Brown Butter','Brown Butter • Toasted Pecans • Demerara Sugar','2026-09-26',96,'complete',84,392),mkDrop('d4',BB,BBD,'2026-10-03',120,'complete',120,552),mkDrop('d5',BB,BBD,'2026-10-10',CAPS[this.props.inventory??'live']||60,'live')],
       liveId:'d5',editId:null,bakeView:'edit',dropSeq:6,
-      sheet:null,q:'',cq:'',csel:null,filter:'all',toast:'',wait:'',waitDone:false,promo:false,tw:1,availSeen:false,sticky:false,nextNo:1049,narrow:typeof window!=='undefined'&&window.innerWidth<420};
+      photoLayout:null,sheet:null,q:'',cq:'',csel:null,filter:'all',toast:'',wait:'',waitDone:false,promo:false,tw:1,availSeen:false,sticky:false,nextNo:1049,narrow:typeof window!=='undefined'&&window.innerWidth<420};
   })();
   introCanvas=React.createRef(); storyCanvas=React.createRef(); orderRef=React.createRef(); videoRef=React.createRef();
 
@@ -974,7 +1028,7 @@ class Component extends DCLogic {
     return {
       modes,isWeb:S.mode==='web',isDash:S.mode==='dash',isNext:S.mode==='next',
       introOn:S.intro&&S.mode==='web',replayIntro:()=>this.replayIntro(),skipIntro:()=>this.endIntro(),introCanvas:this.introCanvas,storyCanvas:this.storyCanvas,orderRef:this.orderRef,videoRef:this.videoRef,
-      heroSub:L.cookie+' Cookies',cookieName:L.cookie,
+      heroSub:L.cookie+' Cookies',...(()=>{const pl=S.photoLayout||this.props.weekPhotoLayout||'arch';return {pArch:pl==='arch',pSplit:pl==='split',pBanner:pl==='banner',pCircle:pl==='circle',pNotSplit:pl!=='split',weekPhoto:pl==='circle'?'assets/salt.jpg':'assets/stack.jpg',photoOpts:[['arch','1 · Arch'],['split','2 · Side by side'],['banner','3 · Banner'],['circle','4 · Round']].map(([id,label])=>({label,bg:pl===id?'#24150D':'transparent',color:pl===id?'#F5EFE4':'#24150D',onClick:()=>this.setState({photoLayout:id})}))}})(),cookieName:L.cookie,
       goOrder:this.goOrder,dropDesc:L.desc,availLine,barW:(S.availSeen?pct:0)+'%',pickupShort:'PICKUP '+dateShort.toUpperCase(),pickupLong,pickupShortDate:dateShort,deadline:L.deadline,
       isOrderable:orderable,isUnavailable:!orderable,unavailTitle:closed&&!gone?'ORDERS ARE CLOSED FOR THIS WEEK.':"THIS WEEK'S MANNA IS GONE.",
       pkgCards,waitEmail:S.wait,onWait:ev=>this.setState({wait:ev.target.value}),joinWait:()=>{if(S.wait.trim())this.setState({waitDone:true})},waitDone:S.waitDone,waitNotDone:!S.waitDone,

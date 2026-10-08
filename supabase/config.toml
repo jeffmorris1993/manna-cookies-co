@@ -261,14 +261,14 @@ otp_expiry = 3600
 subject = "Reset your Manna Cookies & Co. password"
 content_path = "./supabase/templates/recovery.html"
 
-# [auth.email.smtp]
-# enabled = true
-# host = "smtp.resend.com"
-# port = 465
-# user = "resend"
-# pass = "env(RESEND_API_KEY)"
-# admin_email = "hello@sirromstudios.com"
-# sender_name = "Manna Cookies & Co."
+[auth.email.smtp]
+enabled = true
+host = "smtp.resend.com"
+port = 465
+user = "resend"
+pass = "env(RESEND_API_KEY)"
+admin_email = "orders@mannacookiesmi.com"
+sender_name = "Manna Cookies & Co."
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]

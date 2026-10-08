@@ -16,17 +16,17 @@ await page.reload({ waitUntil: "networkidle" });
 // jump to the order section and pick the half dozen
 await page.evaluate(() => document.getElementById("order")?.scrollIntoView());
 await page.waitForTimeout(1200);
-await page.getByRole("button", { name: /THE MANNA HALF DOZEN/i }).click({ force: true });
+await page.getByRole("button", { name: /THE MANNA DOZEN/i }).click({ force: true });
 
 // step 2: details
 await page.waitForSelector('input[placeholder="Your name"]');
 await page.fill('input[placeholder="Your name"]', "Test Customer");
 await page.fill('input[placeholder="(555) 555-0100"]', "202-555-0147");
-await page.fill('input[placeholder="you@email.com"]', "test.customer@example.com");
+await page.fill('input[placeholder="you@email.com"]', "hello@sirromstudios.com");
 await page.getByRole("button", { name: "CONTINUE" }).click({ force: true });
 
 // step 3: window
-await page.getByRole("button", { name: /9:00 – 11:00 AM/ }).click({ force: true });
+await page.locator('div[style*="1fr 1fr"] button:not([disabled])').first().click({ force: true });
 await page.getByRole("button", { name: "CONTINUE" }).click({ force: true });
 
 // step 4: Square card iframe

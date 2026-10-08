@@ -19,7 +19,7 @@ const csp = [
   "style-src 'self' 'unsafe-inline' https://*.squarecdn.com",
   `connect-src 'self' ${supabaseHost} https://*.squareupsandbox.com https://*.squareup.com https://*.squarecdn.com https://pay.google.com https://google.com/pay`,
   "frame-src https://*.squareupsandbox.com https://*.squareup.com https://*.squarecdn.com https://pay.google.com",
-  "img-src 'self' data: blob: https://*.squarecdn.com https://www.gstatic.com",
+  `img-src 'self' data: blob: ${supabaseHost} https://*.squarecdn.com https://www.gstatic.com`,
   "font-src 'self' data: https://*.squarecdn.com",
   "media-src 'self'",
   "object-src 'none'",

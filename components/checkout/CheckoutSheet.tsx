@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { LiveDropView, PackageKind } from "@/lib/types";
 import { formatMoney } from "@/lib/format";
-import { downloadPickupIcs } from "@/lib/ics";
 import { useSquarePayments, type WalletKind } from "./useSquarePayments";
 
 type Confirmation = { orderNumber: string; total: number };
@@ -167,18 +166,6 @@ export default function CheckoutSheet({
     } finally {
       setProcessing(false);
     }
-  };
-
-  const addToCalendar = () => {
-    if (!confirmation || !selected || !selectedWindow) return;
-    downloadPickupIcs({
-      orderNumber: confirmation.orderNumber,
-      packageName: selected.name,
-      cookie: drop.cookie,
-      pickupDateISO: drop.pickupDateISO,
-      windowStart: selectedWindow.starts,
-      windowEnd: selectedWindow.ends,
-    });
   };
 
   const stepTitle = ["Choose quantity", "Your details", "Pickup", "Payment", ""][step - 1] || "";
@@ -592,28 +579,15 @@ export default function CheckoutSheet({
                 </div>
               ))}
             </div>
-            <button
-              onClick={addToCalendar}
-              className="cursor-pointer"
-              style={{
-                marginTop: 22,
-                width: "100%",
-                height: 54,
-                border: "1px solid #24150D",
-                background: "transparent",
-                color: "#24150D",
-                fontSize: 12,
-                letterSpacing: ".2em",
-                fontWeight: 500,
-              }}
-            >
-              ADD PICKUP TO CALENDAR
-            </button>
+            <p style={{ margin: "20px 0 0", fontSize: 13, lineHeight: 1.6, color: "#6E5546" }}>
+              A confirmation email with your pickup details — and a calendar invite — is on its
+              way to your inbox.
+            </p>
             <button
               onClick={onClose}
               className="cursor-pointer border-0"
               style={{
-                marginTop: 8,
+                marginTop: 16,
                 width: "100%",
                 height: 54,
                 background: "#24150D",
