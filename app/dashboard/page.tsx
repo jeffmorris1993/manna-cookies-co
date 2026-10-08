@@ -5,6 +5,7 @@ import { requireOwner } from "@/lib/auth";
 import { getLiveDropView } from "@/lib/live-drop";
 import StatTile from "@/components/dashboard/StatTile";
 import EmptyState from "@/components/dashboard/EmptyState";
+import PickupAddressCard from "@/components/dashboard/PickupAddressCard";
 import OpenCloseCard from "@/components/dashboard/OpenCloseCard";
 import DotGrid from "@/components/dashboard/DotGrid";
 
@@ -53,12 +54,16 @@ export default async function DashboardHome() {
     );
   }
 
-  const { data: orderRows } = await supabase
-    .from("orders")
-    .select("cookie_count, price_cents, paid, status")
-    .eq("drop_id", drop.id)
-    .in("status", ["new", "preparing", "ready", "picked"]);
+  const [{ data: orderRows }, { data: settingsRow }] = await Promise.all([
+    supabase
+      .from("orders")
+      .select("cookie_count, price_cents, paid, status")
+      .eq("drop_id", drop.id)
+      .in("status", ["new", "preparing", "ready", "picked"]),
+    supabase.from("app_settings").select("value").eq("key", "pickup_address").maybeSingle(),
+  ]);
   const orders = orderRows ?? [];
+  const pickupAddress = settingsRow?.value ?? "";
 
   const cookiesOrdered = orders.reduce((s, o) => s + o.cookie_count, 0);
   const revenueCents = orders.filter((o) => o.paid).reduce((s, o) => s + o.price_cents, 0);
@@ -132,6 +137,8 @@ export default async function DashboardHome() {
           </Link>
         ))}
       </div>
+
+      <PickupAddressCard initial={pickupAddress} />
 
       <Link
         href="/dashboard/whats-next"

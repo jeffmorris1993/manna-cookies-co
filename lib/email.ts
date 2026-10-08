@@ -18,6 +18,7 @@ export interface OrderEmailInput {
   pickupDateISO: string; // "2026-10-10"
   windowStart: string; // "09:00"
   windowEnd: string; // "11:00"
+  pickupAddress?: string; // owner-configured; empty = "we'll text you"
 }
 
 const escIcs = (t: string) => t.replace(/[\r\n]+/g, " ").replace(/([,;\\])/g, "\\$1");
@@ -46,6 +47,7 @@ function buildIcs(o: OrderEmailInput): string {
     `DTEND:${end}`,
     `SUMMARY:${escIcs(`Pick up your Manna (${o.packageName})`)}`,
     `DESCRIPTION:${escIcs(`Order ${o.orderNumber} · ${o.cookie}`)}`,
+    ...(o.pickupAddress ? [`LOCATION:${escIcs(o.pickupAddress)}`] : []),
     "END:VEVENT",
     "END:VCALENDAR",
   ].join("\r\n");
@@ -57,22 +59,26 @@ function googleCalendarUrl(o: OrderEmailInput): string {
     text: `Pick up your Manna (${o.packageName})`,
     dates: `${utcStamp(o.pickupDateISO, o.windowStart)}/${utcStamp(o.pickupDateISO, o.windowEnd)}`,
     details: `Order ${o.orderNumber} · ${o.cookie}`,
+    ...(o.pickupAddress ? { location: o.pickupAddress } : {}),
   });
   return `https://calendar.google.com/calendar/render?${p.toString()}`;
 }
 
 function orderHtml(o: OrderEmailInput): string {
   const total = `$${(o.totalCents / 100) % 1 === 0 ? o.totalCents / 100 : (o.totalCents / 100).toFixed(2)}`;
+  // one fact per row — long combined values wrap badly in mail clients
   const rows: [string, string][] = [
-    ["Order", `${o.packageName} · ${o.cookie}`],
+    ["Cookie", o.cookie],
+    ["Package", `${o.packageName} (${o.cookieCount} cookies)`],
     ["Order number", o.orderNumber],
     ["Pickup date", o.pickupDateLabel],
     ["Pickup window", o.windowLabel],
+    ...(o.pickupAddress ? ([["Pickup address", o.pickupAddress]] as [string, string][]) : []),
     ["Total paid", total],
   ];
   const firstName = escHtml(o.name.split(" ")[0] || o.name);
-  const addressRow = process.env.PICKUP_ADDRESS
-    ? `<p style="margin:22px auto 0;max-width:380px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.65;color:#5A4334;"><strong>Pickup address:</strong><br>${escHtml(process.env.PICKUP_ADDRESS)}</p>`
+  const addressRow = o.pickupAddress
+    ? ""
     : `<p style="margin:22px auto 0;max-width:380px;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.65;color:#8A7466;">We&rsquo;ll text you the pickup address before your window.</p>`;
 
   return `<!DOCTYPE html>
@@ -96,7 +102,7 @@ function orderHtml(o: OrderEmailInput): string {
           <img src="https://www.mannacookiesmi.com/logo.png" width="88" height="88" alt="Manna Cookies &amp; Co." style="display:block;width:88px;height:88px;border:0;margin:0 auto;">
           <div style="margin-top:26px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:4px;color:#8A6440;text-transform:uppercase;">Order&nbsp;Confirmed</div>
           <h1 style="margin:16px 0 0;font-family:Georgia,'Times New Roman',serif;font-weight:500;font-size:30px;line-height:1.15;color:#24150D;">Your manna is reserved.</h1>
-          <p style="margin:16px auto 0;max-width:400px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.65;color:#5A4334;">Thank you, ${firstName} — this week&rsquo;s batch has your name on it.</p>
+          <p style="margin:16px auto 0;max-width:400px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.65;color:#5A4334;">Thank you, ${firstName}. See you at pickup.</p>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px;border-top:1px solid #E6DCCB;">
             ${rows
               .map(

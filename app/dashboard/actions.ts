@@ -388,3 +388,23 @@ export async function removeDropPhoto(dropId: string): Promise<ActionResult> {
   revalidateDashboard();
   return { ok: true };
 }
+
+/* ---------------- settings ---------------- */
+
+export async function savePickupAddress(address: string): Promise<ActionResult> {
+  let supabase;
+  try {
+    ({ supabase } = await requireOwner());
+  } catch {
+    return fail("Not signed in.");
+  }
+  const parsed = z.string().trim().max(200).safeParse(address);
+  if (!parsed.success) return fail("Keep the address under 200 characters.");
+
+  const { error } = await supabase
+    .from("app_settings")
+    .upsert({ key: "pickup_address", value: parsed.data, updated_at: new Date().toISOString() });
+  if (error) return fail("Couldn't save the address.");
+  revalidateDashboard();
+  return { ok: true };
+}

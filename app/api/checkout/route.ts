@@ -337,7 +337,13 @@ export async function POST(req: Request) {
     if (checkoutCtx.dropRow && checkoutCtx.winRow) {
       const starts = checkoutCtx.winRow.starts.slice(0, 5);
       const ends = checkoutCtx.winRow.ends.slice(0, 5);
+      const { data: addr } = await db
+        .from("app_settings")
+        .select("value")
+        .eq("key", "pickup_address")
+        .maybeSingle();
       await sendOrderConfirmation({
+        pickupAddress: addr?.value?.trim() || undefined,
         to: input.email.toLowerCase(),
         name: input.name,
         orderNumber,

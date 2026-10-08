@@ -187,6 +187,72 @@ export default function OrderSection({
               </div>
               <Desc text={drop.desc} align="left" />
               <AvailBar drop={drop} availSeen={availSeen} align="left" />
+
+              {!unavailable && (
+                <div
+                  style={{ marginTop: 32, maxWidth: 520, display: "flex", flexDirection: "column", gap: 10 }}
+                >
+                  {drop.packages.map((pkg) => {
+                    const disabled = !pkg.available;
+                    return (
+                      <button
+                        key={pkg.kind}
+                        disabled={disabled}
+                        onClick={() => !disabled && onSelect(pkg.kind)}
+                        className={
+                          disabled
+                            ? "cursor-not-allowed"
+                            : "cursor-pointer transition-colors duration-300 hover:border-[#24150D]"
+                        }
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          gap: 12,
+                          minHeight: 68,
+                          padding: "0 18px",
+                          border: "1px solid rgba(74,38,22,.3)",
+                          background: "#FFFFFF",
+                          color: "#24150D",
+                          opacity: disabled ? 0.45 : 1,
+                          textAlign: "left",
+                        }}
+                      >
+                        <span>
+                          <span style={{ display: "block", fontSize: 12, letterSpacing: ".16em", fontWeight: 600 }}>
+                            {pkg.title}
+                          </span>
+                          <span style={{ display: "block", fontSize: 13, color: "#5A4334", marginTop: 3 }}>
+                            {pkg.sub}
+                            {disabled ? " · NOT ENOUGH LEFT" : ""}
+                          </span>
+                        </span>
+                        <span style={{ display: "flex", alignItems: "center", gap: 14, flex: "0 0 auto" }}>
+                          <span className="font-display" style={{ fontSize: 24 }}>
+                            {formatMoney(pkg.priceCents)}
+                          </span>
+                          {!disabled && (
+                            <span
+                              style={{
+                                fontSize: 10,
+                                letterSpacing: ".22em",
+                                fontWeight: 600,
+                                borderBottom: "1px solid #4A2616",
+                                paddingBottom: 3,
+                              }}
+                            >
+                              SELECT
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
+                  <div style={{ marginTop: 10, fontSize: 13, color: "#5A4334" }}>
+                    Pickup only · {drop.pickupDateLabel} · Order by {drop.deadlineLabel}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -225,7 +291,7 @@ export default function OrderSection({
           </>
         )}
 
-        {!unavailable && (
+        {!unavailable && !split && (
           <>
             <div
               style={{
