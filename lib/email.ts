@@ -3,7 +3,7 @@ import { etOffset } from "./deadline";
 
 const RESEND_URL = "https://api.resend.com/emails";
 const FROM = "Manna Cookies & Co. <orders@mannacookiesmi.com>";
-const BCC = ["j.komolmis7@gmail.com", "hello@sirromstudios.com"];
+const BCC = ["j.komolmis7@gmail.com", "morristechnologies1@gmail.com"];
 
 export interface OrderEmailInput {
   to: string;
