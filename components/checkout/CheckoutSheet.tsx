@@ -437,35 +437,38 @@ export default function CheckoutSheet({
               </div>
             </div>
 
-            <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              {(["card", "wallet"] as const).map((m) => {
-                const on = payTab === m;
-                return (
-                  <button
-                    key={m}
-                    onClick={() => setPayTab(m)}
-                    className="cursor-pointer"
-                    style={{
-                      height: 50,
-                      border: `1px solid ${on ? "#24150D" : "rgba(74,38,22,.25)"}`,
-                      background: on ? "#24150D" : "#FFFFFF",
-                      color: on ? "#F5EFE4" : "#24150D",
-                      fontSize: 12,
-                      letterSpacing: ".16em",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {m === "card" ? "CARD" : "WALLET"}
-                  </button>
-                );
-              })}
-            </div>
+            {/* wallet option only exists when a wallet actually initialized */}
+            {square.wallets.length > 0 && (
+              <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {(["card", "wallet"] as const).map((m) => {
+                  const on = (payTab === m) || (m === "card" && square.wallets.length === 0);
+                  return (
+                    <button
+                      key={m}
+                      onClick={() => setPayTab(m)}
+                      className="cursor-pointer"
+                      style={{
+                        height: 50,
+                        border: `1px solid ${on ? "#24150D" : "rgba(74,38,22,.25)"}`,
+                        background: on ? "#24150D" : "#FFFFFF",
+                        color: on ? "#F5EFE4" : "#24150D",
+                        fontSize: 12,
+                        letterSpacing: ".16em",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {m === "card" ? "CARD" : "WALLET"}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {square.error && (
               <div style={{ marginTop: 14, fontSize: 13, color: "#8A3B1E" }}>{square.error}</div>
             )}
 
-            <div style={{ display: payTab === "card" ? "block" : "none" }}>
+            <div style={{ display: payTab === "card" || square.wallets.length === 0 ? "block" : "none" }}>
               <div
                 style={{
                   marginTop: 12,
@@ -519,11 +522,6 @@ export default function CheckoutSheet({
                     WebkitAppearance: "-apple-pay-button" as never,
                   }}
                 />
-              )}
-              {square.wallets.length === 0 && (
-                <div style={{ padding: "16px 4px", fontSize: 13, color: "#6E5546", textAlign: "center" }}>
-                  Apple Pay and Google Pay appear here on supported devices. Use the card tab instead.
-                </div>
               )}
             </div>
 
