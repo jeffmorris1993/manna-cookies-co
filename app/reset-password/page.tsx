@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
-import { OWNER_EMAIL } from "@/lib/auth";
+import { isOwnerEmail } from "@/lib/auth";
 import ResetForm from "./ResetForm";
 
 export const metadata = {
@@ -27,7 +27,7 @@ export default async function ResetPasswordPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const validSession = !!user && user.email?.toLowerCase() === OWNER_EMAIL;
+  const validSession = !!user && isOwnerEmail(user.email);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-cream px-6 py-12">

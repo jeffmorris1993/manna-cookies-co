@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { forgotSchema } from "@/lib/schemas";
 import { supabaseServer } from "@/lib/supabase/server";
 import { allowRequest } from "@/lib/ratelimit";
+import { isOwnerEmail } from "@/lib/auth";
 
 export type ForgotState = { done?: boolean; error?: string };
 
@@ -29,6 +30,10 @@ export async function requestReset(
   if (!allowed) {
     return { error: "Too many requests. Please try again in an hour." };
   }
+
+  // Only the two admin accounts can ever receive a reset link. Everyone else
+  // gets the same generic reply — no account enumeration, no email sent.
+  if (!isOwnerEmail(parsed.data.email)) return DONE;
 
   const supabase = await supabaseServer();
   await supabase.auth.resetPasswordForEmail(parsed.data.email, {

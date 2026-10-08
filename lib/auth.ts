@@ -1,7 +1,20 @@
 import "server-only";
 import { supabaseServer } from "./supabase/server";
 
-export const OWNER_EMAIL = "hello@sirromstudios.com";
+/** The only accounts allowed into the dashboard, with display names. */
+export const OWNERS: Record<string, string> = {
+  "hello@sirromstudios.com": "Jeff",
+  "j.komolmis7@gmail.com": "Elaina",
+};
+export const OWNER_EMAILS = Object.keys(OWNERS);
+
+export function isOwnerEmail(email: string | undefined | null): boolean {
+  return !!email && OWNER_EMAILS.includes(email.toLowerCase());
+}
+
+export function ownerName(email: string | undefined | null): string {
+  return (email && OWNERS[email.toLowerCase()]) || "there";
+}
 
 /** Session policy (user-selected): 24h idle timeout + 7-day absolute cap. */
 export const SESSION_ABSOLUTE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -27,7 +40,7 @@ export async function requireOwner() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user || user.email?.toLowerCase() !== OWNER_EMAIL) {
+  if (!user || !isOwnerEmail(user.email)) {
     throw new Error("UNAUTHORIZED");
   }
   return { supabase, user };

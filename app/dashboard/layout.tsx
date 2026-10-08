@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { connection } from "next/server";
 import { redirect } from "next/navigation";
-import { requireOwner } from "@/lib/auth";
+import { requireOwner, ownerName } from "@/lib/auth";
 import TabBar from "@/components/dashboard/TabBar";
 import ToastProvider from "@/components/dashboard/Toast";
 import AutoRefresh from "@/components/dashboard/AutoRefresh";
@@ -23,11 +23,13 @@ function todayLabel() {
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   await connection();
   let supabase;
+  let user;
   try {
-    ({ supabase } = await requireOwner());
+    ({ supabase, user } = await requireOwner());
   } catch {
     redirect("/login");
   }
+  const greeting = `LET'S GET BAKING, ${ownerName(user.email).toUpperCase()}`;
 
   const { count } = await supabase
     .from("orders")
@@ -56,8 +58,21 @@ export default async function DashboardLayout({ children }: { children: React.Re
             gap: 12,
           }}
         >
-          <div style={{ fontSize: 11, letterSpacing: ".24em", fontWeight: 500, color: "#8A6440" }}>
-            {todayLabel()}
+          <div>
+            <div style={{ fontSize: 11, letterSpacing: ".24em", fontWeight: 500, color: "#8A6440" }}>
+              {todayLabel()}
+            </div>
+            <div
+              style={{
+                marginTop: 4,
+                fontSize: 10,
+                letterSpacing: ".2em",
+                fontWeight: 600,
+                color: "#24150D",
+              }}
+            >
+              {greeting}
+            </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <form action={signOut}>

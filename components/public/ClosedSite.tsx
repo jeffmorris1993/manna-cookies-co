@@ -1,9 +1,12 @@
 import Image from "next/image";
 import WaitlistForm from "./WaitlistForm";
+import BetaBar from "./BetaBar";
 
 /** Public site when no drop is live: branded rest state + waitlist. */
 export default function ClosedSite() {
   return (
+    <>
+    <BetaBar />
     <main
       className="flex flex-col items-center justify-center text-center"
       style={{
@@ -65,5 +68,6 @@ export default function ClosedSite() {
         Straight From Heaven.
       </div>
     </main>
+    </>
   );
 }

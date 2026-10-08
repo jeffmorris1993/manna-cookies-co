@@ -1,22 +1,48 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import type { LiveDropView } from "@/lib/types";
+
+function useNarrow(maxWidth = 560) {
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${maxWidth}px)`);
+    const update = () => setNarrow(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, [maxWidth]);
+  return narrow;
+}
 
 /**
  * Slim branded strip above the hero: last-call / almost-gone urgency.
- * Echoes the prototype's dark top strip (#140B06).
+ * Full copy on wide screens; condensed copy on phones so nothing truncates.
  */
 export default function AnnouncementBar({ drop }: { drop: LiveDropView }) {
+  const narrow = useNarrow();
   if (!drop.orderable) return null;
 
-  const hoursLeft = (new Date(drop.deadlineAt).getTime() - Date.now()) / 3_600_000;
+  const deadline = new Date(drop.deadlineAt);
+  const hoursLeft = (deadline.getTime() - Date.now()) / 3_600_000;
   const nearSellout = drop.remaining <= 18;
   const lastCall = hoursLeft > 0 && hoursLeft <= 24;
   if (!nearSellout && !lastCall) return null;
 
-  const text = nearSellout
+  const shortDeadline = `${deadline
+    .toLocaleDateString("en-US", { weekday: "short", timeZone: "America/New_York" })
+    .toUpperCase()} ${deadline.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "America/New_York",
+  })}`;
+
+  const full = nearSellout
     ? `ALMOST GONE · ONLY ${drop.remaining} COOKIES LEFT THIS WEEK`
     : `LAST CALL · ORDERING CLOSES ${drop.deadlineLabel.toUpperCase()}`;
+  const short = nearSellout
+    ? `ONLY ${drop.remaining} COOKIES LEFT`
+    : `LAST CALL · CLOSES ${shortDeadline.toUpperCase()}`;
 
   return (
     <div
@@ -36,16 +62,14 @@ export default function AnnouncementBar({ drop }: { drop: LiveDropView }) {
     >
       <span
         style={{
-          fontSize: 10.5,
-          letterSpacing: ".22em",
+          fontSize: narrow ? 10 : 10.5,
+          letterSpacing: narrow ? ".18em" : ".22em",
           fontWeight: 500,
           color: "#E3CBA8",
           whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
         }}
       >
-        {text}
+        {narrow ? short : full}
       </span>
     </div>
   );

@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { supabaseServer } from "@/lib/supabase/server";
-import { OWNER_EMAIL, SESS_START_COOKIE, LAST_SEEN_COOKIE } from "@/lib/auth";
+import { isOwnerEmail, SESS_START_COOKIE, LAST_SEEN_COOKIE } from "@/lib/auth";
 
 export type ResetState = { error?: string };
 
@@ -27,7 +27,7 @@ export async function updatePassword(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user || user.email?.toLowerCase() !== OWNER_EMAIL) {
+  if (!user || !isOwnerEmail(user.email)) {
     return { error: "Your reset link expired. Please request a new one." };
   }
 

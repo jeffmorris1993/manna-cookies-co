@@ -1,7 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const OWNER_EMAIL = "hello@sirromstudios.com";
+const OWNER_EMAILS = ["hello@sirromstudios.com", "j.komolmis7@gmail.com"];
+const isOwnerEmail = (e?: string | null) => !!e && OWNER_EMAILS.includes(e.toLowerCase());
 const SESSION_ABSOLUTE_MS = 7 * 24 * 60 * 60 * 1000;
 const SESSION_IDLE_MS = 24 * 60 * 60 * 1000;
 const SESS_START = "mc_sess_start";
@@ -62,7 +63,7 @@ export async function proxy(request: NextRequest) {
     if (!user) return loginRedirect();
 
     // single-owner lockout, even if a stray account ever appears
-    if (user.email?.toLowerCase() !== OWNER_EMAIL) {
+    if (!isOwnerEmail(user.email)) {
       await supabase.auth.signOut();
       return loginRedirect("denied=1");
     }
@@ -92,7 +93,7 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  if (isLogin && user && user.email?.toLowerCase() === OWNER_EMAIL) {
+  if (isLogin && user && isOwnerEmail(user.email)) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     url.search = "";

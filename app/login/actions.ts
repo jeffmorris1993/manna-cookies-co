@@ -6,7 +6,7 @@ import { loginSchema } from "@/lib/schemas";
 import { supabaseServer } from "@/lib/supabase/server";
 import { allowRequest } from "@/lib/ratelimit";
 import {
-  OWNER_EMAIL,
+  isOwnerEmail,
   SESS_START_COOKIE,
   LAST_SEEN_COOKIE,
   sessionCookieOptions,
@@ -41,7 +41,7 @@ export async function signIn(
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error || !data.user) return { error: GENERIC };
 
-  if (data.user.email?.toLowerCase() !== OWNER_EMAIL) {
+  if (!isOwnerEmail(data.user.email)) {
     await supabase.auth.signOut();
     return { error: GENERIC };
   }
