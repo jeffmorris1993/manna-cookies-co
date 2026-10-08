@@ -5,24 +5,24 @@ const STEPS = [
     n: "01",
     title: "BROWNED BY HAND",
     copy: "Butter cooked slowly until deep, rich and nutty.",
-    img: "/brown-butter.jpg",
-    alt: "Brown butter being poured",
+    img: "/process-browned.jpg",
+    alt: "A cookie cross-section showing deep browned-butter edges",
     delay: undefined as string | undefined,
   },
   {
     n: "02",
     title: "REAL INGREDIENTS",
     copy: "Quality chocolate, butter and flour. Nothing to fill space.",
-    img: "/cookie-broken.jpg",
-    alt: "A cookie broken open with melted chocolate",
+    img: "/process-ingredients.jpg",
+    alt: "A cookie pulled apart with melted chocolate stretching between the halves",
     delay: "120",
   },
   {
     n: "03",
     title: "THE FINISHING TOUCH",
     copy: "Every cookie finished by hand, one at a time.",
-    img: "/sea-salt.jpg",
-    alt: "Flaky sea salt falling onto a cookie",
+    img: "/process-salt.jpg",
+    alt: "A bitten cookie topped with flaky sea salt and dark chocolate",
     delay: "240",
   },
 ];
@@ -105,8 +105,12 @@ export default function CookieSection() {
                 color: "#4A2616",
               }}
             >
-              <span style={{ width: 40, height: 1, background: "#4A2616" }} />
-              <span>EST. 2023 · SMALL BATCH · MADE TO CRAVE</span>
+              <span style={{ flex: "0 0 auto", width: 40, height: 1, background: "#4A2616" }} />
+              <span style={{ lineHeight: 1.9 }}>
+                <span style={{ whiteSpace: "nowrap" }}>EST. 2023</span> ·{" "}
+                <span style={{ whiteSpace: "nowrap" }}>SMALL BATCH</span> ·{" "}
+                <span style={{ whiteSpace: "nowrap" }}>MADE TO CRAVE</span>
+              </span>
             </div>
           </div>
 

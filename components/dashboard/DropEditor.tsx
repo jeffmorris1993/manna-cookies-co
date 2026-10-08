@@ -401,7 +401,7 @@ export default function DropEditor({
           style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}
         >
           <div style={{ fontSize: 11, letterSpacing: ".2em", fontWeight: 500, color: "#C9A57E" }}>
-            {LONG_STATUS[drop.status]}
+            {drop.status === "live" && !isOpen ? "LIVE · ORDERS CLOSED" : LONG_STATUS[drop.status]}
           </div>
           <div style={{ fontSize: 12, color: "#D9C8B3" }}>
             {parseISODate(firstPickup).toLocaleDateString("en-US", {
@@ -676,7 +676,14 @@ export default function DropEditor({
                       flexDirection: narrow ? "column" : "row",
                       alignItems: narrow ? "stretch" : "center",
                       gap: 8,
-                      paddingLeft: 10,
+                      ...(narrow
+                        ? {
+                            marginLeft: 10,
+                            padding: 10,
+                            border: "1px solid rgba(74,38,22,.18)",
+                            borderRadius: 12,
+                          }
+                        : { paddingLeft: 10 }),
                     }}
                   >
                     <div style={{ flex: narrow ? "0 0 auto" : "1 1 auto", display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
@@ -863,27 +870,31 @@ export default function DropEditor({
         </button>
       ))}
 
-      {drop.status !== "live" && (
-        <button
-          disabled={pending}
-          onClick={onDelete}
-          onBlur={() => setConfirmDelete(false)}
-          className="cursor-pointer disabled:opacity-60"
-          style={{
-            height: 54,
-            border: `1px solid ${confirmDelete ? "#8A3B1E" : "rgba(138,59,30,.45)"}`,
-            borderRadius: 14,
-            background: confirmDelete ? "#8A3B1E" : "transparent",
-            color: confirmDelete ? "#F5EFE4" : "#8A3B1E",
-            fontSize: 12,
-            letterSpacing: ".2em",
-            fontWeight: 600,
-            transition: "background .25s,color .25s,border-color .25s",
-          }}
-        >
-          {pending ? "WORKING…" : confirmDelete ? "TAP AGAIN TO DELETE FOREVER" : "DELETE THIS DROP"}
-        </button>
-      )}
+      <button
+        disabled={pending}
+        onClick={onDelete}
+        onBlur={() => setConfirmDelete(false)}
+        className="cursor-pointer disabled:opacity-60"
+        style={{
+          height: 54,
+          border: `1px solid ${confirmDelete ? "#8A3B1E" : "rgba(138,59,30,.45)"}`,
+          borderRadius: 14,
+          background: confirmDelete ? "#8A3B1E" : "transparent",
+          color: confirmDelete ? "#F5EFE4" : "#8A3B1E",
+          fontSize: 12,
+          letterSpacing: ".2em",
+          fontWeight: 600,
+          transition: "background .25s,color .25s,border-color .25s",
+        }}
+      >
+        {pending
+          ? "WORKING…"
+          : confirmDelete
+            ? drop.status === "live"
+              ? "TAP AGAIN · REMOVES IT FROM THE WEBSITE"
+              : "TAP AGAIN TO DELETE FOREVER"
+            : "DELETE THIS DROP"}
+      </button>
     </main>
   );
 }

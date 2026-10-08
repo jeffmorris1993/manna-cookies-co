@@ -254,8 +254,6 @@ export async function deleteDrop(dropId: string): Promise<ActionResult> {
     .eq("id", dropId)
     .maybeSingle();
   if (!drop) return fail("Drop not found.");
-  if (drop.status === "live")
-    return fail("This drop is live on the website. Make another drop live first.");
 
   const { count } = await admin
     .from("orders")

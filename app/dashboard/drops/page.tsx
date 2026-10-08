@@ -31,7 +31,7 @@ export default async function DropsPage() {
   const [{ data: drops }, { data: orderAgg }] = await Promise.all([
     supabase
       .from("drops")
-      .select("id, cookie, pickup_date, capacity, status")
+      .select("id, cookie, pickup_date, capacity, status, is_open")
       .order("pickup_date", { ascending: false }),
     supabase
       .from("orders")
@@ -168,7 +168,7 @@ export default async function DropsPage() {
                     border: `1px solid ${st.b}`,
                   }}
                 >
-                  {st.l}
+                  {d.status === "live" && !d.is_open ? "LIVE · CLOSED" : st.l}
                 </span>
               </div>
               <div

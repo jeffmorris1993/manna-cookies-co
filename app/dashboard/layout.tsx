@@ -11,14 +11,14 @@ import { signOut } from "@/app/login/actions";
 export const metadata = { title: "Owner Dashboard · Manna Cookies & Co.", robots: { index: false } };
 
 function todayLabel() {
-  return `MANNA · ${new Date()
+  return new Date()
     .toLocaleDateString("en-US", {
       weekday: "long",
       month: "long",
       day: "numeric",
       timeZone: "America/New_York",
     })
-    .toUpperCase()}`;
+    .toUpperCase();
 }
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -60,8 +60,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
           }}
         >
           <div>
-            <div style={{ fontSize: 11, letterSpacing: ".24em", fontWeight: 500, color: "#8A6440" }}>
-              {todayLabel()}
+            <div
+              style={{
+                fontSize: 11,
+                letterSpacing: ".24em",
+                fontWeight: 500,
+                color: "#8A6440",
+                lineHeight: 1.7,
+              }}
+            >
+              MANNA · <span style={{ whiteSpace: "nowrap" }}>{todayLabel()}</span>
             </div>
             <div
               style={{
@@ -101,7 +109,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
               <span aria-hidden style={{ fontSize: 9, color: "#C9B8A6" }}>
                 ·
               </span>
-              <form action={signOut}>
+              <form action={signOut} style={{ display: "flex" }}>
                 <button
                   className="cursor-pointer border-0 bg-transparent"
                   style={{ fontSize: 9, letterSpacing: ".18em", color: "#8A7466", fontWeight: 600, padding: 0 }}
