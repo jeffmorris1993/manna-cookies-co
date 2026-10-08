@@ -112,7 +112,15 @@ function Quote({
   );
 }
 
-function ReviewLightbox({ review, onClose }: { review: (typeof REVIEWS)[number]; onClose: () => void }) {
+function ReviewLightbox({
+  review,
+  dark,
+  onClose,
+}: {
+  review: (typeof REVIEWS)[number];
+  dark: boolean;
+  onClose: () => void;
+}) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -152,9 +160,9 @@ function ReviewLightbox({ review, onClose }: { review: (typeof REVIEWS)[number];
           maxWidth: 560,
           maxHeight: "85svh",
           overflowY: "auto",
-          background: "#FBF8F1",
-          color: "#24150D",
-          border: "1px solid rgba(74,38,22,.3)",
+          background: dark ? "#24150D" : "#FBF8F1",
+          color: dark ? "#F5EFE4" : "#24150D",
+          border: dark ? "1px solid rgba(201,165,126,.35)" : "1px solid rgba(74,38,22,.3)",
           padding: "clamp(28px,5vw,44px)",
           animation: "mannaSheet .35s cubic-bezier(.2,.7,.2,1) both",
         }}
@@ -170,15 +178,18 @@ function ReviewLightbox({ review, onClose }: { review: (typeof REVIEWS)[number];
             width: 40,
             height: 40,
             borderRadius: "50%",
-            border: "1px solid rgba(74,38,22,.25)",
+            border: dark ? "1px solid rgba(245,239,228,.35)" : "1px solid rgba(74,38,22,.25)",
             background: "transparent",
-            color: "#4A2616",
+            color: dark ? "#F5EFE4" : "#4A2616",
             fontSize: 18,
           }}
         >
           ×
         </button>
-        <div className="font-display" style={{ fontSize: 56, lineHeight: 0.6, color: "#8A6440" }}>
+        <div
+          className="font-display"
+          style={{ fontSize: 56, lineHeight: 0.6, color: dark ? "#C9A57E" : "#8A6440" }}
+        >
           &ldquo;
         </div>
         <div
@@ -193,8 +204,15 @@ function ReviewLightbox({ review, onClose }: { review: (typeof REVIEWS)[number];
           {review.quote}
         </div>
         <div style={{ marginTop: 24 }}>
-          <Stars gold="#B98B55" />
-          <div style={{ marginTop: 10, fontSize: 11, letterSpacing: ".22em", color: "#6E5546" }}>
+          <Stars gold={dark ? "#C9A57E" : "#B98B55"} />
+          <div
+            style={{
+              marginTop: 10,
+              fontSize: 11,
+              letterSpacing: ".22em",
+              color: dark ? "#D9C8B3" : "#6E5546",
+            }}
+          >
             — {review.name}
           </div>
         </div>
@@ -275,7 +293,11 @@ export default function Testimonials() {
       </div>
 
       {openIdx !== null && (
-        <ReviewLightbox review={REVIEWS[openIdx]} onClose={() => setOpenIdx(null)} />
+        <ReviewLightbox
+          review={REVIEWS[openIdx]}
+          dark={openIdx % 2 === 0}
+          onClose={() => setOpenIdx(null)}
+        />
       )}
     </section>
   );
