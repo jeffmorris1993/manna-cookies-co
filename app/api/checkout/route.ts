@@ -167,7 +167,7 @@ export async function POST(req: Request) {
   let squareOrderId: string | undefined;
   let checkoutCtx: {
     dropRow: { cookie: string; pickup_date: string } | null;
-    winRow: { starts: string; ends: string } | null;
+    winRow: { starts: string; ends: string; pickup_date: string } | null;
   } = { dropRow: null, winRow: null };
   try {
     const search = await square.customers.search({
@@ -204,15 +204,15 @@ export async function POST(req: Request) {
 
     const [{ data: dropRow }, { data: winRow }] = await Promise.all([
       db.from("drops").select("cookie, pickup_date").eq("id", input.dropId).single(),
-      db.from("pickup_windows").select("starts, ends").eq("id", input.windowId).single(),
+      db.from("pickup_windows").select("starts, ends, pickup_date").eq("id", input.windowId).single(),
     ]);
     checkoutCtx = { dropRow, winRow };
 
     // Pickup fulfillment: makes the order visible in the Square dashboard's
     // Orders view and carries the pickup time into Square's own tooling.
     const pickupAt =
-      dropRow?.pickup_date && winRow?.starts
-        ? `${dropRow.pickup_date}T${winRow.starts.slice(0, 5)}:00${etOffset(dropRow.pickup_date)}`
+      winRow?.pickup_date && winRow?.starts
+        ? `${winRow.pickup_date}T${winRow.starts.slice(0, 5)}:00${etOffset(winRow.pickup_date)}`
         : undefined;
 
     const orderRes = await square.orders.create({
@@ -351,9 +351,9 @@ export async function POST(req: Request) {
         packageName: pkgName,
         cookieCount: reserved.cookie_count,
         totalCents: reserved.price_cents,
-        pickupDateLabel: longDate(checkoutCtx.dropRow.pickup_date),
+        pickupDateLabel: longDate(checkoutCtx.winRow.pickup_date),
         windowLabel: windowLabel(starts, ends),
-        pickupDateISO: checkoutCtx.dropRow.pickup_date,
+        pickupDateISO: checkoutCtx.winRow.pickup_date,
         windowStart: starts,
         windowEnd: ends,
       });

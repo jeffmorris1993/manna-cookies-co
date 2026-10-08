@@ -10,7 +10,8 @@ import {
   uploadDropPhoto,
   removeDropPhoto,
 } from "@/app/dashboard/actions";
-import { formatMoney, parseISODate } from "@/lib/format";
+import { formatMoney, parseISODate, longDate } from "@/lib/format";
+import { deadlineTimestamp, earliestPickupDate } from "@/lib/deadline";
 import { PACKAGE_META, type PackageKind } from "@/lib/types";
 import { useToast } from "./Toast";
 
@@ -19,13 +20,15 @@ type EditorDrop = {
   cookie: string;
   description: string;
   photoUrl: string | null;
-  pickupDate: string;
+  deadlineDays: number;
   capacity: number;
   status: "live" | "scheduled" | "complete";
   isOpen: boolean;
   reserved: number;
   revenue: number;
 };
+type EditorPkg = { kind: PackageKind; enabled: boolean; priceCents: number };
+type EditorWin = { id: string | null; date: string; starts: string; ends: string; full: boolean };
 
 /** Downscale to ≤1600px JPEG client-side so phone photos upload fast. */
 async function compressImage(file: File): Promise<File> {
@@ -45,8 +48,6 @@ async function compressImage(file: File): Promise<File> {
   }
   return file;
 }
-type EditorPkg = { kind: PackageKind; enabled: boolean; priceCents: number };
-type EditorWin = { id: string | null; starts: string; ends: string; full: boolean };
 
 const LONG_STATUS: Record<EditorDrop["status"], string> = {
   live: "LIVE ON THE WEBSITE",
@@ -124,6 +125,68 @@ function Toggle({ on, onClick, disabled }: { on: boolean; onClick: () => void; d
   );
 }
 
+function Stepper({
+  value,
+  min,
+  max,
+  step = 1,
+  disabled,
+  onChange,
+  decLabel,
+  incLabel,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  disabled?: boolean;
+  onChange: (v: number) => void;
+  decLabel: string;
+  incLabel: string;
+}) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <button
+        disabled={disabled || value <= min}
+        onClick={() => onChange(Math.max(min, value - step))}
+        aria-label={decLabel}
+        className="cursor-pointer disabled:opacity-40"
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: 10,
+          border: "1px solid rgba(74,38,22,.25)",
+          background: "#FFFFFF",
+          fontSize: 20,
+          color: "#24150D",
+        }}
+      >
+        −
+      </button>
+      <span className="font-display" style={{ minWidth: 52, textAlign: "center", fontSize: 24 }}>
+        {value}
+      </span>
+      <button
+        disabled={disabled || value >= max}
+        onClick={() => onChange(Math.min(max, value + step))}
+        aria-label={incLabel}
+        className="cursor-pointer disabled:opacity-40"
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: 10,
+          border: "1px solid rgba(74,38,22,.25)",
+          background: "#FFFFFF",
+          fontSize: 20,
+          color: "#24150D",
+        }}
+      >
+        +
+      </button>
+    </div>
+  );
+}
+
 export default function DropEditor({
   drop,
   packages,
@@ -135,7 +198,7 @@ export default function DropEditor({
 }) {
   const [cookie, setCookie] = useState(drop.cookie);
   const [description, setDescription] = useState(drop.description);
-  const [pickupDate, setPickupDate] = useState(drop.pickupDate);
+  const [deadlineDays, setDeadlineDays] = useState(drop.deadlineDays);
   const [capacity, setCapacity] = useState(drop.capacity);
   const [isOpen, setIsOpen] = useState(drop.isOpen);
   const [wins, setWins] = useState<EditorWin[]>(windows);
@@ -143,6 +206,25 @@ export default function DropEditor({
   const [pending, start] = useTransition();
   const [photoBusy, setPhotoBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
+  const toast = useToast();
+
+  const readOnly = drop.status === "complete";
+  const remaining = Math.max(0, capacity - drop.reserved);
+  const pct = capacity ? Math.min(100, Math.round((drop.reserved / capacity) * 100)) : 0;
+  const capMin = Math.max(12, Math.ceil(drop.reserved / 6) * 6 || 12);
+
+  // date picker floor: earliest pickup whose deadline hasn't already passed
+  const minPickupDate = earliestPickupDate(deadlineDays);
+  const firstPickup = [...wins].map((w) => w.date).sort()[0] ?? minPickupDate;
+  const deadlineAt = new Date(deadlineTimestamp(firstPickup, deadlineDays));
+  const deadlinePast = deadlineAt.getTime() <= Date.now();
+  const deadlineNote = `Orders close ${deadlineAt.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+    timeZone: "America/New_York",
+  })} · 8:00 PM`;
 
   const onPhotoPicked = async (file: File | undefined) => {
     if (!file || photoBusy) return;
@@ -171,28 +253,20 @@ export default function DropEditor({
       setPhotoBusy(false);
     }
   };
-  const router = useRouter();
-  const toast = useToast();
-
-  const readOnly = drop.status === "complete";
-  const remaining = Math.max(0, capacity - drop.reserved);
-  const pct = capacity ? Math.min(100, Math.round((drop.reserved / capacity) * 100)) : 0;
-  const capMin = Math.max(12, Math.ceil(drop.reserved / 6) * 6 || 12);
-  const dateLong = parseISODate(pickupDate).toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
 
   const addWindow = () => {
-    const sortedWins = [...wins].sort((a, b) => a.starts.localeCompare(b.starts));
-    const last = sortedWins[sortedWins.length - 1];
-    let h = last ? Number(last.ends.slice(0, 2)) : 9;
+    const sorted = [...wins].sort((a, b) =>
+      a.date === b.date ? a.starts.localeCompare(b.starts) : a.date.localeCompare(b.date),
+    );
+    const last = sorted[sorted.length - 1];
+    const date = last?.date ?? minPickupDate;
+    let h = last && last.date === date ? Number(last.ends.slice(0, 2)) : 9;
     h = Math.min(h, 21);
     setWins([
       ...wins,
       {
         id: null,
+        date,
         starts: `${String(h).padStart(2, "0")}:00`,
         ends: `${String(Math.min(23, h + 2)).padStart(2, "0")}:00`,
         full: false,
@@ -208,13 +282,16 @@ export default function DropEditor({
     setWins(wins.filter((_, j) => j !== i));
   };
 
+  const updateWin = (i: number, patch: Partial<EditorWin>) =>
+    setWins(wins.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+
   const save = (then?: "makeLive") =>
     start(async () => {
       const res = await saveDrop({
         dropId: drop.id,
         cookie,
         description,
-        pickupDate,
+        deadlineDays,
         capacity,
         isOpen,
         windows: wins,
@@ -260,10 +337,7 @@ export default function DropEditor({
     <main
       style={{ padding: "12px 0", display: "flex", flexDirection: "column", gap: 14, animation: "mannaIn .35s ease" }}
     >
-      <Link
-        href="/dashboard/drops"
-        style={{ fontSize: 14, color: "#4A2616", padding: "4px 0" }}
-      >
+      <Link href="/dashboard/drops" style={{ fontSize: 14, color: "#4A2616", padding: "4px 0" }}>
         ← All drops
       </Link>
 
@@ -275,7 +349,13 @@ export default function DropEditor({
           <div style={{ fontSize: 11, letterSpacing: ".2em", fontWeight: 500, color: "#C9A57E" }}>
             {LONG_STATUS[drop.status]}
           </div>
-          <div style={{ fontSize: 12, color: "#D9C8B3" }}>{dateLong}</div>
+          <div style={{ fontSize: 12, color: "#D9C8B3" }}>
+            {parseISODate(firstPickup).toLocaleDateString("en-US", {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+            })}
+          </div>
         </div>
         <div className="font-display" style={{ marginTop: 8, fontSize: 26, lineHeight: 1.2 }}>
           {cookie || "Untitled cookie"}
@@ -373,54 +453,37 @@ export default function DropEditor({
             <Toggle on={isOpen} onClick={() => setIsOpen(!isOpen)} />
           </div>
         )}
-        <label style={ROW}>
-          <span style={{ fontWeight: 500 }}>Pickup date</span>
-          <input
-            type="date"
-            value={pickupDate}
-            disabled={readOnly}
-            onChange={(e) => e.target.value && setPickupDate(e.target.value)}
-            className="disabled:opacity-60"
-            style={{ ...FIELD_INPUT, flex: "0 1 190px", minWidth: 0 }}
-          />
-        </label>
         <div style={ROW}>
-          <span style={{ fontWeight: 500 }}>Ordering deadline</span>
-          <span style={{ fontSize: 14, color: "#6E5546" }}>
-            2 days before pickup · 8:00 PM
-          </span>
+          <div>
+            <div style={{ fontWeight: 500 }}>Ordering deadline</div>
+            <div style={{ fontSize: 12, color: deadlinePast ? "#8A3B1E" : "#6E5546", marginTop: 2 }}>
+              {deadlineDays === 0 ? "Day of first pickup" : `${deadlineDays} day${deadlineDays === 1 ? "" : "s"} before first pickup`}
+              {" · "}
+              {deadlinePast ? "already passed — move the pickup dates" : deadlineNote}
+            </div>
+          </div>
+          <Stepper
+            value={deadlineDays}
+            min={0}
+            max={7}
+            disabled={readOnly}
+            onChange={setDeadlineDays}
+            decLabel="Fewer days"
+            incLabel="More days"
+          />
         </div>
         <div style={{ ...ROW, borderBottom: 0 }}>
           <span style={{ fontWeight: 500 }}>Maximum cookies</span>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <button
-              disabled={readOnly || capacity <= capMin}
-              onClick={() => setCapacity(Math.max(capMin, capacity - 6))}
-              aria-label="Decrease capacity"
-              className="cursor-pointer disabled:opacity-40"
-              style={{
-                width: 44, height: 44, borderRadius: 10,
-                border: "1px solid rgba(74,38,22,.25)", background: "#FFFFFF", fontSize: 20, color: "#24150D",
-              }}
-            >
-              −
-            </button>
-            <span className="font-display" style={{ minWidth: 52, textAlign: "center", fontSize: 24 }}>
-              {capacity}
-            </span>
-            <button
-              disabled={readOnly || capacity >= 480}
-              onClick={() => setCapacity(Math.min(480, capacity + 6))}
-              aria-label="Increase capacity"
-              className="cursor-pointer disabled:opacity-40"
-              style={{
-                width: 44, height: 44, borderRadius: 10,
-                border: "1px solid rgba(74,38,22,.25)", background: "#FFFFFF", fontSize: 20, color: "#24150D",
-              }}
-            >
-              +
-            </button>
-          </div>
+          <Stepper
+            value={capacity}
+            min={capMin}
+            max={480}
+            step={6}
+            disabled={readOnly}
+            onChange={setCapacity}
+            decLabel="Decrease capacity"
+            incLabel="Increase capacity"
+          />
         </div>
       </div>
 
@@ -509,7 +572,8 @@ export default function DropEditor({
       <div style={{ background: "#FBF8F1", borderRadius: 16, padding: "16px 18px" }}>
         <div style={SECTION_LABEL}>PICKUP WINDOWS</div>
         <div style={{ marginTop: 4, fontSize: 13, lineHeight: 1.5, color: "#6E5546" }}>
-          Customers choose one at checkout. Mark a window full to stop new orders for it.
+          Customers choose one at checkout. Windows can be on different days. Mark a window full
+          to stop new orders for it.
         </div>
         <div style={{ marginTop: 10, display: "flex", flexDirection: "column" }}>
           {wins.map((w, i) => (
@@ -517,45 +581,50 @@ export default function DropEditor({
               key={w.id ?? `new-${i}`}
               style={{
                 display: "flex",
-                flexWrap: "wrap",
-                alignItems: "center",
+                flexDirection: "column",
                 gap: 8,
-                padding: "10px 0",
+                padding: "12px 0",
                 borderBottom: "1px solid rgba(74,38,22,.1)",
               }}
             >
-              <div style={{ flex: "1 1 220px", display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
                 <input
-                  type="time"
-                  value={w.starts}
+                  type="date"
+                  value={w.date}
+                  min={minPickupDate}
                   disabled={readOnly}
-                  onChange={(e) =>
-                    setWins(wins.map((x, j) => (j === i ? { ...x, starts: e.target.value } : x)))
-                  }
+                  onChange={(e) => e.target.value && updateWin(i, { date: e.target.value })}
                   className="disabled:opacity-60"
-                  style={{ ...FIELD_INPUT, flex: 1, minWidth: 0 }}
+                  style={{ ...FIELD_INPUT, flex: "1 1 150px", minWidth: 0 }}
                 />
-                <span style={{ color: "#6E5546" }}>–</span>
-                <input
-                  type="time"
-                  value={w.ends}
-                  disabled={readOnly}
-                  onChange={(e) =>
-                    setWins(wins.map((x, j) => (j === i ? { ...x, ends: e.target.value } : x)))
-                  }
-                  className="disabled:opacity-60"
-                  style={{ ...FIELD_INPUT, flex: 1, minWidth: 0 }}
-                />
+                <div style={{ flex: "2 1 200px", display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                  <input
+                    type="time"
+                    value={w.starts}
+                    disabled={readOnly}
+                    onChange={(e) => updateWin(i, { starts: e.target.value })}
+                    className="disabled:opacity-60"
+                    style={{ ...FIELD_INPUT, flex: 1, minWidth: 0 }}
+                  />
+                  <span style={{ color: "#6E5546" }}>–</span>
+                  <input
+                    type="time"
+                    value={w.ends}
+                    disabled={readOnly}
+                    onChange={(e) => updateWin(i, { ends: e.target.value })}
+                    className="disabled:opacity-60"
+                    style={{ ...FIELD_INPUT, flex: 1, minWidth: 0 }}
+                  />
+                </div>
               </div>
-              <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
+              <div style={{ display: "flex", gap: 8 }}>
                 <button
                   disabled={readOnly}
-                  onClick={() => setWins(wins.map((x, j) => (j === i ? { ...x, full: !x.full } : x)))}
+                  onClick={() => updateWin(i, { full: !w.full })}
                   className="cursor-pointer disabled:opacity-60"
                   style={{
+                    flex: 1,
                     height: 44,
-                    minWidth: 76,
-                    padding: "0 12px",
                     borderRadius: 10,
                     border: `1px solid ${w.full ? "#24150D" : "rgba(74,38,22,.25)"}`,
                     background: w.full ? "#24150D" : "#FFFFFF",
@@ -565,7 +634,7 @@ export default function DropEditor({
                     fontWeight: 600,
                   }}
                 >
-                  {w.full ? "FULL" : "OPEN"}
+                  {w.full ? "FULL — TAP TO REOPEN" : "OPEN — TAP TO MARK FULL"}
                 </button>
                 <button
                   disabled={readOnly}
@@ -573,7 +642,7 @@ export default function DropEditor({
                   aria-label="Remove window"
                   className="cursor-pointer disabled:opacity-40"
                   style={{
-                    width: 44,
+                    flex: "0 0 44px",
                     height: 44,
                     borderRadius: 10,
                     border: "1px solid rgba(74,38,22,.2)",

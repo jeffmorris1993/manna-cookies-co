@@ -16,7 +16,7 @@ export default async function DropEditPage({ params }: { params: Promise<{ id: s
 
   const { data: drop } = await supabase
     .from("drops")
-    .select("id, cookie, description, photo_url, pickup_date, capacity, status, is_open")
+    .select("id, cookie, description, photo_url, pickup_date, deadline_days, capacity, status, is_open")
     .eq("id", id)
     .maybeSingle();
   if (!drop) notFound();
@@ -25,9 +25,10 @@ export default async function DropEditPage({ params }: { params: Promise<{ id: s
     supabase.from("drop_packages").select("kind, enabled, price_cents").eq("drop_id", id),
     supabase
       .from("pickup_windows")
-      .select("id, starts, ends, is_full, sort")
+      .select("id, starts, ends, is_full, sort, pickup_date")
       .eq("drop_id", id)
-      .order("sort"),
+      .order("pickup_date")
+      .order("starts"),
     supabase
       .from("orders")
       .select("cookie_count, price_cents, paid, status")
@@ -46,7 +47,7 @@ export default async function DropEditPage({ params }: { params: Promise<{ id: s
         id: drop.id,
         cookie: drop.cookie,
         description: drop.description,
-        pickupDate: drop.pickup_date,
+        deadlineDays: drop.deadline_days,
         capacity: drop.capacity,
         status: drop.status,
         photoUrl: drop.photo_url,
@@ -59,6 +60,7 @@ export default async function DropEditPage({ params }: { params: Promise<{ id: s
         .map((p) => ({ kind: p.kind, enabled: p.enabled, priceCents: p.price_cents }))}
       windows={(wins ?? []).map((w) => ({
         id: w.id,
+        date: w.pickup_date,
         starts: w.starts.slice(0, 5),
         ends: w.ends.slice(0, 5),
         full: w.is_full,

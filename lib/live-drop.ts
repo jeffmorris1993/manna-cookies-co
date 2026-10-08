@@ -44,9 +44,10 @@ export async function getLiveDropView(): Promise<LiveDropView | null> {
         .eq("enabled", true),
       db
         .from("pickup_windows")
-        .select("id, starts, ends, is_full, sort")
+        .select("id, starts, ends, is_full, sort, pickup_date")
         .eq("drop_id", drop.id)
-        .order("sort"),
+        .order("pickup_date")
+        .order("starts"),
       reservedCount(drop.id),
     ]);
   if (pkgErr) throw new Error(`getLiveDropView packages: ${pkgErr.message}`);
@@ -76,14 +77,24 @@ export async function getLiveDropView(): Promise<LiveDropView | null> {
   const pastDeadline = Date.now() > deadline.getTime();
   const orderable = drop.is_open && !soldOut && !pastDeadline;
 
+  // pickup can span multiple days — derive labels from the windows themselves
+  const dates = [...new Set((winRows ?? []).map((w) => w.pickup_date as string))].sort();
+  const multiDay = dates.length > 1;
+  const pickupDateLabel = multiDay
+    ? dates.map((d) => longDate(d)).join(dates.length === 2 ? " & " : " · ")
+    : longDate(dates[0] ?? drop.pickup_date);
+  const pickupShort = multiDay
+    ? `PICKUP ${monthDay(dates[0]).toUpperCase()} – ${monthDay(dates[dates.length - 1]).toUpperCase()}`
+    : `PICKUP ${monthDay(dates[0] ?? drop.pickup_date).toUpperCase()}`;
+
   return {
     id: drop.id,
     cookie: drop.cookie,
     desc: drop.description,
     photoUrl: drop.photo_url,
     pickupDateISO: drop.pickup_date,
-    pickupDateLabel: longDate(drop.pickup_date),
-    pickupShort: `PICKUP ${monthDay(drop.pickup_date).toUpperCase()}`,
+    pickupDateLabel,
+    pickupShort,
     deadlineLabel: deadlineLabel(deadline),
     deadlineAt: deadline.toISOString(),
     capacity: drop.capacity,
@@ -101,6 +112,8 @@ export async function getLiveDropView(): Promise<LiveDropView | null> {
       full: w.is_full,
       starts: w.starts.slice(0, 5),
       ends: w.ends.slice(0, 5),
+      dateISO: w.pickup_date as string,
+      dateLabel: longDate(w.pickup_date as string),
     })),
   };
 }

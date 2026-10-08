@@ -169,7 +169,6 @@ export default function CheckoutSheet({
   };
 
   const stepTitle = ["Choose quantity", "Your details", "Pickup", "Payment", ""][step - 1] || "";
-  const shortDate = drop.pickupShort.replace(/^PICKUP /, "");
 
   return (
     <div className="fixed inset-0 z-[70] flex items-end justify-center" role="dialog" aria-modal>
@@ -372,37 +371,58 @@ export default function CheckoutSheet({
               </span>
             </div>
             <div style={{ marginTop: 20, ...LABEL }}>AVAILABLE PICKUP WINDOW</div>
-            <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              {drop.windows.map((w) => {
-                const on = w.id === windowId;
-                return (
-                  <button
-                    key={w.id}
-                    disabled={w.full}
-                    onClick={() => changeOrder(undefined, w.id)}
-                    className={w.full ? "cursor-not-allowed" : "cursor-pointer"}
-                    style={{
-                      minHeight: 62,
-                      border: `1px solid ${on ? "#24150D" : "rgba(74,38,22,.25)"}`,
-                      background: on ? "#24150D" : "#FFFFFF",
-                      color: on ? "#F5EFE4" : "#24150D",
-                      fontSize: 14,
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 2,
-                      opacity: w.full ? 0.45 : 1,
-                    }}
-                  >
-                    <span>{w.label}</span>
-                    <span style={{ fontSize: 9, letterSpacing: ".2em" }}>
-                      {w.full ? "FULL" : on ? "SELECTED" : ""}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            {[...new Set(drop.windows.map((w) => w.dateISO))].map((dateISO) => {
+              const group = drop.windows.filter((w) => w.dateISO === dateISO);
+              const multiDay = new Set(drop.windows.map((w) => w.dateISO)).size > 1;
+              return (
+                <div key={dateISO}>
+                  {multiDay && (
+                    <div
+                      style={{
+                        margin: "14px 0 0",
+                        fontSize: 10,
+                        letterSpacing: ".2em",
+                        fontWeight: 600,
+                        color: "#8A6440",
+                      }}
+                    >
+                      {group[0]!.dateLabel.toUpperCase()}
+                    </div>
+                  )}
+                  <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    {group.map((w) => {
+                      const on = w.id === windowId;
+                      return (
+                        <button
+                          key={w.id}
+                          disabled={w.full}
+                          onClick={() => changeOrder(undefined, w.id)}
+                          className={w.full ? "cursor-not-allowed" : "cursor-pointer"}
+                          style={{
+                            minHeight: 62,
+                            border: `1px solid ${on ? "#24150D" : "rgba(74,38,22,.25)"}`,
+                            background: on ? "#24150D" : "#FFFFFF",
+                            color: on ? "#F5EFE4" : "#24150D",
+                            fontSize: 14,
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 2,
+                            opacity: w.full ? 0.45 : 1,
+                          }}
+                        >
+                          <span>{w.label}</span>
+                          <span style={{ fontSize: 9, letterSpacing: ".2em" }}>
+                            {w.full ? "FULL" : on ? "SELECTED" : ""}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -421,7 +441,7 @@ export default function CheckoutSheet({
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "#5A4334" }}>Pickup</span>
                 <span>
-                  {shortDate} · {selectedWindow?.label}
+                  {selectedWindow ? `${selectedWindow.dateLabel} · ${selectedWindow.label}` : ""}
                 </span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -555,7 +575,7 @@ export default function CheckoutSheet({
             >
               {[
                 ["Order", `${selected.name} · ${selected.count} cookies`],
-                ["Pickup date", drop.pickupDateLabel],
+                ["Pickup date", selectedWindow?.dateLabel ?? drop.pickupDateLabel],
                 ["Pickup window", selectedWindow?.label ?? ""],
                 ["Order number", confirmation.orderNumber],
               ].map(([k, v], i) => (

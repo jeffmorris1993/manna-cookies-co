@@ -54,7 +54,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             padding: "22px 18px 6px",
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center",
+            alignItems: "flex-start",
             gap: 12,
           }}
         >
@@ -74,22 +74,30 @@ export default async function DashboardLayout({ children }: { children: React.Re
               {greeting}
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-end",
+              gap: 6,
+              flex: "0 0 auto",
+            }}
+          >
+            <Image
+              src="/logo.png"
+              alt="Manna"
+              width={44}
+              height={44}
+              style={{ width: 44, height: 44, display: "block" }}
+            />
             <form action={signOut}>
               <button
                 className="cursor-pointer border-0 bg-transparent"
-                style={{ fontSize: 10, letterSpacing: ".2em", color: "#8A7466", fontWeight: 500 }}
+                style={{ fontSize: 9, letterSpacing: ".18em", color: "#8A7466", fontWeight: 600, padding: 0 }}
               >
                 SIGN OUT
               </button>
             </form>
-            <Image
-              src="/logo.png"
-              alt="Manna"
-              width={48}
-              height={48}
-              style={{ width: 48, height: 48, display: "block" }}
-            />
           </div>
         </header>
         <div style={{ maxWidth: 760, margin: "0 auto", padding: "0 18px" }}>{children}</div>

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { updateOrderStatus } from "@/app/dashboard/actions";
-import { formatMoney, windowLabel, displayOrderNumber } from "@/lib/format";
+import { formatMoney, windowLabel, displayOrderNumber, parseISODate } from "@/lib/format";
 import { PACKAGE_META } from "@/lib/types";
 import type { PackageKind } from "@/lib/types";
 import { useToast } from "./Toast";
@@ -17,7 +17,7 @@ export type OrderRow = {
   paid: boolean;
   status: "new" | "preparing" | "ready" | "picked";
   customers: { name: string; phone: string } | null;
-  pickup_windows: { starts: string; ends: string } | null;
+  pickup_windows: { starts: string; ends: string; pickup_date: string } | null;
 };
 
 /* STATUS pill styles — verbatim from the design's STATUS map */
@@ -158,7 +158,12 @@ export default function OrdersList({
           const st = STATUS[o.status];
           const busy = pendingId === o.id;
           const win = o.pickup_windows
-            ? windowLabel(o.pickup_windows.starts.slice(0, 5), o.pickup_windows.ends.slice(0, 5))
+            ? `${parseISODate(o.pickup_windows.pickup_date)
+                .toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
+                .toUpperCase()} · ${windowLabel(
+                o.pickup_windows.starts.slice(0, 5),
+                o.pickup_windows.ends.slice(0, 5),
+              )}`
             : "—";
           const prim =
             o.status === "ready"

@@ -107,7 +107,7 @@ export default function Testimonials() {
             </h2>
           </div>
           <a
-            href="https://instagram.com"
+            href="https://www.instagram.com/mannacookiesmi/"
             target="_blank"
             rel="noopener noreferrer"
             style={{

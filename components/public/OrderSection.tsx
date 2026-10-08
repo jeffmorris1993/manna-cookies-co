@@ -295,9 +295,11 @@ export default function OrderSection({
           <>
             <div
               style={{
+                // flex (not grid): cards share a row when they fit, and any
+                // wrapped card is CENTERED instead of stranded on the left
                 marginTop: 56,
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,200px),340px))",
+                display: "flex",
+                flexWrap: "wrap",
                 justifyContent: "center",
                 gap: "clamp(16px,2vw,28px)",
                 textAlign: "center",
@@ -318,6 +320,8 @@ export default function OrderSection({
                         : "cursor-pointer transition-[box-shadow,translate] duration-[.4s] hover:-translate-y-1 hover:shadow-card-hover"
                     }
                     style={{
+                      flex: "0 1 320px",
+                      minWidth: "min(100%, 240px)",
                       border: "1px solid #4A2616",
                       background: "#F5EFE4",
                       padding: 9,

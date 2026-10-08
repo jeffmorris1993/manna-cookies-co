@@ -83,7 +83,7 @@ const saveDropSchema = z.object({
   dropId: z.uuid(),
   cookie: z.string().trim().min(1, "Give the cookie a name.").max(120),
   description: z.string().trim().max(280, "Keep the description under 280 characters."),
-  pickupDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a valid pickup date."),
+  deadlineDays: z.number().int().min(0).max(7),
   capacity: z
     .number()
     .int()
@@ -95,6 +95,7 @@ const saveDropSchema = z.object({
     .array(
       z.object({
         id: z.uuid().nullable(), // null = new window
+        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Give each window a date."),
         starts: z.string().regex(/^\d{2}:\d{2}$/),
         ends: z.string().regex(/^\d{2}:\d{2}$/),
         full: z.boolean(),
@@ -136,6 +137,15 @@ export async function saveDrop(input: SaveDropInput): Promise<ActionResult> {
     if (w.ends <= w.starts) return fail("Each pickup window must end after it starts.");
   }
 
+  // pickup can span several days; the drop's date is the earliest window day
+  const pickupDate = [...d.windows].map((w) => w.date).sort()[0]!;
+  const deadlineIso = deadlineTimestamp(pickupDate, d.deadlineDays);
+  if (target.status !== "complete" && new Date(deadlineIso).getTime() <= Date.now()) {
+    return fail(
+      `With a ${d.deadlineDays}-day deadline, the first pickup day must be later — ordering would already be closed.`,
+    );
+  }
+
   // capacity can't drop below what's already reserved
   const { data: reservedRows } = await supabase
     .from("orders")
@@ -152,8 +162,9 @@ export async function saveDrop(input: SaveDropInput): Promise<ActionResult> {
     .update({
       cookie: d.cookie,
       description: d.description,
-      pickup_date: d.pickupDate,
-      deadline: deadlineTimestamp(d.pickupDate),
+      pickup_date: pickupDate,
+      deadline: deadlineIso,
+      deadline_days: d.deadlineDays,
       capacity: d.capacity,
       is_open: d.isOpen,
     })
@@ -172,14 +183,14 @@ export async function saveDrop(input: SaveDropInput): Promise<ActionResult> {
     if (w.id) {
       const { error } = await supabase
         .from("pickup_windows")
-        .update({ starts: w.starts, ends: w.ends, is_full: w.full, sort: i })
+        .update({ pickup_date: w.date, starts: w.starts, ends: w.ends, is_full: w.full, sort: i })
         .eq("id", w.id)
         .eq("drop_id", d.dropId); // never touch another drop's window
       if (error) return fail("Couldn't save a pickup window.");
     } else {
       const { error } = await supabase
         .from("pickup_windows")
-        .insert({ drop_id: d.dropId, starts: w.starts, ends: w.ends, is_full: w.full, sort: i });
+        .insert({ drop_id: d.dropId, pickup_date: w.date, starts: w.starts, ends: w.ends, is_full: w.full, sort: i });
       if (error) return fail("Couldn't add a pickup window.");
     }
   }
@@ -251,16 +262,24 @@ export async function createNextDrop(fromDropId: string | null): Promise<ActionR
     return fail("Invalid request.");
   }
 
-  let src: { cookie: string; description: string; capacity: number } | null = null;
+  let src: { cookie: string; description: string; capacity: number; deadline_days: number } | null =
+    null;
   if (fromDropId) {
     const { data } = await supabase
       .from("drops")
-      .select("cookie, description, capacity")
+      .select("cookie, description, capacity, deadline_days")
       .eq("id", fromDropId)
       .single();
     if (!data) return fail("Source drop not found.");
     src = data;
   }
+
+  const { data: defDays } = await supabase
+    .from("app_settings")
+    .select("value")
+    .eq("key", "deadline_days")
+    .maybeSingle();
+  const deadlineDays = src?.deadline_days ?? Math.min(7, Math.max(0, parseInt(defDays?.value ?? "2", 10) || 2));
 
   const { data: latest } = await supabase
     .from("drops")
@@ -288,7 +307,8 @@ export async function createNextDrop(fromDropId: string | null): Promise<ActionR
       cookie: src?.cookie ?? "",
       description: src?.description ?? "",
       pickup_date: pickup,
-      deadline: deadlineTimestamp(pickup),
+      deadline: deadlineTimestamp(pickup, deadlineDays),
+      deadline_days: deadlineDays,
       capacity: src?.capacity ?? 60,
       status: "scheduled",
       is_open: true,
@@ -314,23 +334,37 @@ export async function createNextDrop(fromDropId: string | null): Promise<ActionR
   });
   await supabase.from("drop_packages").insert(pkgRows);
 
+  const plusWeek = (iso: string) => {
+    const dt = new Date(`${iso}T12:00:00Z`);
+    dt.setUTCDate(dt.getUTCDate() + 7);
+    return dt.toISOString().slice(0, 10);
+  };
   const { data: wins } = fromDropId
     ? await supabase
         .from("pickup_windows")
-        .select("starts, ends, sort")
+        .select("starts, ends, sort, pickup_date")
         .eq("drop_id", fromDropId)
         .order("sort")
     : { data: null };
-  const winRows = (wins?.length ? wins : DEFAULT_WINDOWS.map((w, i) => ({ ...w, sort: i }))).map(
-    (w) => ({
-      drop_id: created.id,
-      starts: w.starts,
-      ends: w.ends,
-      is_full: false,
-      sort: w.sort,
-    }),
-  );
+  const winRows = (
+    wins?.length
+      ? wins.map((w) => ({ ...w, pickup_date: plusWeek(w.pickup_date) }))
+      : DEFAULT_WINDOWS.map((w, i) => ({ ...w, sort: i, pickup_date: pickup }))
+  ).map((w) => ({
+    drop_id: created.id,
+    pickup_date: w.pickup_date,
+    starts: w.starts,
+    ends: w.ends,
+    is_full: false,
+    sort: w.sort,
+  }));
   await supabase.from("pickup_windows").insert(winRows);
+  // keep the drop's date aligned with its earliest window
+  const minDate = winRows.map((w) => w.pickup_date).sort()[0]!;
+  await supabase
+    .from("drops")
+    .update({ pickup_date: minDate, deadline: deadlineTimestamp(minDate, deadlineDays) })
+    .eq("id", created.id);
 
   revalidateDashboard();
   return { ok: true, id: created.id };
@@ -390,6 +424,31 @@ export async function removeDropPhoto(dropId: string): Promise<ActionResult> {
 }
 
 /* ---------------- settings ---------------- */
+
+export async function saveOrderSettings(
+  address: string,
+  deadlineDays: number,
+): Promise<ActionResult> {
+  let supabase;
+  try {
+    ({ supabase } = await requireOwner());
+  } catch {
+    return fail("Not signed in.");
+  }
+  const addr = z.string().trim().max(200).safeParse(address);
+  const days = z.number().int().min(0).max(7).safeParse(deadlineDays);
+  if (!addr.success) return fail("Keep the address under 200 characters.");
+  if (!days.success) return fail("Deadline must be between 0 and 7 days.");
+
+  const now = new Date().toISOString();
+  const { error } = await supabase.from("app_settings").upsert([
+    { key: "pickup_address", value: addr.data, updated_at: now },
+    { key: "deadline_days", value: String(days.data), updated_at: now },
+  ]);
+  if (error) return fail("Couldn't save settings.");
+  revalidateDashboard();
+  return { ok: true };
+}
 
 export async function savePickupAddress(address: string): Promise<ActionResult> {
   let supabase;

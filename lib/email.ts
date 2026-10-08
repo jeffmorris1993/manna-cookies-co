@@ -123,7 +123,7 @@ function orderHtml(o: OrderEmailInput): string {
         </td></tr>
         <tr><td align="center" style="padding:30px 20px 0;">
           <div style="font-family:Georgia,'Times New Roman',serif;font-size:19px;color:#24150D;">Manna Cookies &amp; Co.</div>
-          <div style="margin-top:4px;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:15px;color:#8A6440;">Straight From Heaven.</div>
+          <div style="margin-top:4px;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:15px;color:#8A6440;">Straight From Heaven. &middot; Made to Crave.</div>
           <div style="margin-top:18px;font-family:Arial,Helvetica,sans-serif;font-size:10px;letter-spacing:3px;color:#8A7466;text-transform:uppercase;">EST. 2023 &middot; Small Batch &middot; Weekly</div>
         </td></tr>
       </table>

@@ -5,7 +5,7 @@ import { requireOwner } from "@/lib/auth";
 import { getLiveDropView } from "@/lib/live-drop";
 import StatTile from "@/components/dashboard/StatTile";
 import EmptyState from "@/components/dashboard/EmptyState";
-import PickupAddressCard from "@/components/dashboard/PickupAddressCard";
+import OrderSettingsCard from "@/components/dashboard/PickupAddressCard";
 import OpenCloseCard from "@/components/dashboard/OpenCloseCard";
 import DotGrid from "@/components/dashboard/DotGrid";
 
@@ -60,10 +60,11 @@ export default async function DashboardHome() {
       .select("cookie_count, price_cents, paid, status")
       .eq("drop_id", drop.id)
       .in("status", ["new", "preparing", "ready", "picked"]),
-    supabase.from("app_settings").select("value").eq("key", "pickup_address").maybeSingle(),
+    supabase.from("app_settings").select("key, value").in("key", ["pickup_address", "deadline_days"]),
   ]);
   const orders = orderRows ?? [];
-  const pickupAddress = settingsRow?.value ?? "";
+  const pickupAddress = settingsRow?.find((r) => r.key === "pickup_address")?.value ?? "";
+  const deadlineDays = Math.min(7, Math.max(0, parseInt(settingsRow?.find((r) => r.key === "deadline_days")?.value ?? "2", 10) || 2));
 
   const cookiesOrdered = orders.reduce((s, o) => s + o.cookie_count, 0);
   const revenueCents = orders.filter((o) => o.paid).reduce((s, o) => s + o.price_cents, 0);
@@ -138,7 +139,7 @@ export default async function DashboardHome() {
         ))}
       </div>
 
-      <PickupAddressCard initial={pickupAddress} />
+      <OrderSettingsCard initialAddress={pickupAddress} initialDeadlineDays={deadlineDays} />
 
       <Link
         href="/dashboard/whats-next"

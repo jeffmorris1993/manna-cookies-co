@@ -44,6 +44,8 @@ export interface PublicWindow {
   full: boolean;
   starts: string; // "09:00"
   ends: string; // "11:00"
+  dateISO: string; // "2026-10-11" — windows can span multiple days
+  dateLabel: string; // "Saturday, Oct 11"
 }
 
 export interface LiveDropView {

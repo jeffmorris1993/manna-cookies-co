@@ -65,7 +65,20 @@ export default function ClosedSite() {
         Manna Cookies &amp; Co.
       </div>
       <div className="font-display italic" style={{ marginTop: 4, fontSize: 17, color: "#8A6440" }}>
-        Straight From Heaven.
+        Straight From Heaven. · Made to Crave.
+      </div>
+      <div
+        style={{
+          marginTop: 24,
+          display: "flex",
+          gap: 28,
+          fontSize: 11,
+          letterSpacing: ".26em",
+          fontWeight: 500,
+        }}
+      >
+        <a href="https://www.instagram.com/mannacookiesmi/" target="_blank" rel="noopener noreferrer">INSTAGRAM</a>
+        <a href="https://www.facebook.com/mannacookiesmi" target="_blank" rel="noopener noreferrer">FACEBOOK</a>
       </div>
     </main>
     </>

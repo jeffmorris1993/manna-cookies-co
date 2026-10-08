@@ -28,7 +28,7 @@ export default async function OrdersPage({
     const { data } = await supabase
       .from("orders")
       .select(
-        "id, order_number, package, cookie_count, price_cents, paid, status, customers(name, phone), pickup_windows(starts, ends)",
+        "id, order_number, package, cookie_count, price_cents, paid, status, customers(name, phone), pickup_windows(starts, ends, pickup_date)",
       )
       .eq("drop_id", live.id)
       .in("status", ["new", "preparing", "ready", "picked"])

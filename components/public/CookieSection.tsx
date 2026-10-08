@@ -106,7 +106,7 @@ export default function CookieSection() {
               }}
             >
               <span style={{ width: 40, height: 1, background: "#4A2616" }} />
-              <span>EST. 2023 · SMALL BATCH</span>
+              <span>EST. 2023 · SMALL BATCH · MADE TO CRAVE</span>
             </div>
           </div>
 

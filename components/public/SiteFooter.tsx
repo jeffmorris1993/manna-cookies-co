@@ -31,9 +31,12 @@ export default function SiteFooter({
           height={128}
           style={{ width: 128, height: 128, display: "block" }}
         />
+        <div style={{ marginTop: 28, fontSize: 10, letterSpacing: ".3em", fontWeight: 500, color: "#8A6440" }}>
+          FOLLOW THE BAKE
+        </div>
         <div
           style={{
-            marginTop: 28,
+            marginTop: 14,
             display: "flex",
             flexWrap: "wrap",
             justifyContent: "center",
@@ -43,8 +46,11 @@ export default function SiteFooter({
             fontWeight: 500,
           }}
         >
-          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">
+          <a href="https://www.instagram.com/mannacookiesmi/" target="_blank" rel="noopener noreferrer">
             INSTAGRAM
+          </a>
+          <a href="https://www.facebook.com/mannacookiesmi" target="_blank" rel="noopener noreferrer">
+            FACEBOOK
           </a>
           <a href="mailto:hello@mannacookies.co">CONTACT</a>
           <a href="#order" onClick={onOrder}>
@@ -68,6 +74,12 @@ export default function SiteFooter({
           style={{ marginTop: 6, fontSize: "clamp(20px,3vw,26px)", color: "#8A6440" }}
         >
           Straight From Heaven.
+        </div>
+        <div
+          className="font-display italic"
+          style={{ marginTop: 2, fontSize: "clamp(17px,2.6vw,22px)", color: "#8A6440" }}
+        >
+          Made to Crave.
         </div>
         <span style={{ marginTop: 44, fontSize: 10, letterSpacing: ".24em", color: "#6E5546" }}>
           EST. 2023
