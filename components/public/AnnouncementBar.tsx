@@ -1,19 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import type { LiveDropView } from "@/lib/types";
-
-function useNarrow(maxWidth = 560) {
-  const [narrow, setNarrow] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia(`(max-width: ${maxWidth}px)`);
-    const update = () => setNarrow(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, [maxWidth]);
-  return narrow;
-}
+import { useNarrow } from "@/lib/useNarrow";
 
 /**
  * Slim branded strip above the hero: last-call / almost-gone urgency.

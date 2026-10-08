@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { requireOwner, ownerName } from "@/lib/auth";
@@ -90,14 +91,25 @@ export default async function DashboardLayout({ children }: { children: React.Re
               height={44}
               style={{ width: 44, height: 44, display: "block" }}
             />
-            <form action={signOut}>
-              <button
-                className="cursor-pointer border-0 bg-transparent"
-                style={{ fontSize: 9, letterSpacing: ".18em", color: "#8A7466", fontWeight: 600, padding: 0 }}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <Link
+                href="/"
+                style={{ fontSize: 9, letterSpacing: ".18em", color: "#8A7466", fontWeight: 600 }}
               >
-                SIGN OUT
-              </button>
-            </form>
+                VIEW SITE
+              </Link>
+              <span aria-hidden style={{ fontSize: 9, color: "#C9B8A6" }}>
+                ·
+              </span>
+              <form action={signOut}>
+                <button
+                  className="cursor-pointer border-0 bg-transparent"
+                  style={{ fontSize: 9, letterSpacing: ".18em", color: "#8A7466", fontWeight: 600, padding: 0 }}
+                >
+                  SIGN OUT
+                </button>
+              </form>
+            </div>
           </div>
         </header>
         <div style={{ maxWidth: 760, margin: "0 auto", padding: "0 18px" }}>{children}</div>

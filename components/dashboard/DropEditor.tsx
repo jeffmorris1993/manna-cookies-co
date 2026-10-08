@@ -16,6 +16,7 @@ import { deadlineTimestamp, earliestPickupDate } from "@/lib/deadline";
 import { PACKAGE_META, type PackageKind } from "@/lib/types";
 import { useToast } from "./Toast";
 import DatePicker from "./DatePicker";
+import { useNarrow } from "@/lib/useNarrow";
 
 type EditorDrop = {
   id: string;
@@ -210,6 +211,7 @@ export default function DropEditor({
   const fileRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const toast = useToast();
+  const narrow = useNarrow(480);
 
   const readOnly = drop.status === "complete";
   const remaining = Math.max(0, capacity - drop.reserved);
@@ -669,9 +671,15 @@ export default function DropEditor({
                 {winsFor(date).map(({ w, i }) => (
                   <div
                     key={w.id ?? `new-${i}`}
-                    style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, paddingLeft: 10 }}
+                    style={{
+                      display: "flex",
+                      flexDirection: narrow ? "column" : "row",
+                      alignItems: narrow ? "stretch" : "center",
+                      gap: 8,
+                      paddingLeft: 10,
+                    }}
                   >
-                    <div style={{ flex: "1 1 190px", display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                    <div style={{ flex: narrow ? "0 0 auto" : "1 1 auto", display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
                       <input
                         type="time"
                         value={w.starts}
@@ -690,7 +698,7 @@ export default function DropEditor({
                         style={{ ...FIELD_INPUT, flex: 1, minWidth: 0 }}
                       />
                     </div>
-                    <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
+                    <div style={{ display: "flex", gap: 8, marginLeft: narrow ? 0 : "auto" }}>
                       <button
                         disabled={readOnly}
                         onClick={() => updateWin(i, { full: !w.full })}
@@ -698,6 +706,7 @@ export default function DropEditor({
                         style={{
                           height: 44,
                           minWidth: 74,
+                          flex: narrow ? 1 : "0 0 auto",
                           padding: "0 12px",
                           borderRadius: 10,
                           border: `1px solid ${w.full ? "#24150D" : "rgba(74,38,22,.25)"}`,
