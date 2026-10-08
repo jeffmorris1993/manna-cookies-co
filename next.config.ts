@@ -17,8 +17,8 @@ const csp = [
   // React dev mode requires eval; production stays strict
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://sandbox.web.squarecdn.com https://web.squarecdn.com https://pay.google.com`,
   "style-src 'self' 'unsafe-inline' https://*.squarecdn.com",
-  `connect-src 'self' ${supabaseHost} https://*.squareupsandbox.com https://*.squareup.com https://*.squarecdn.com https://pay.google.com https://google.com/pay`,
-  "frame-src https://*.squareupsandbox.com https://*.squareup.com https://*.squarecdn.com https://pay.google.com",
+  `connect-src 'self' ${supabaseHost} https://*.squareupsandbox.com https://*.squareup.com https://*.squarecdn.com https://pay.google.com https://google.com/pay https://www.google.com/pay https://payments.google.com`,
+  "frame-src https://*.squareupsandbox.com https://*.squareup.com https://*.squarecdn.com https://pay.google.com https://payments.google.com",
   `img-src 'self' data: blob: ${supabaseHost} https://*.squarecdn.com https://www.gstatic.com`,
   "font-src 'self' data: https://*.squarecdn.com",
   "media-src 'self'",
