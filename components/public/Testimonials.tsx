@@ -73,6 +73,7 @@ function Quote({
         aspectRatio: "4/5",
         width: "100%",
         minWidth: 0,
+        overflow: "hidden", // never leak past the card — leaked content makes the rail scroll vertically
         scrollSnapAlign: "start",
         background: dark ? "#24150D" : "#FBF8F1",
         color: dark ? "#F5EFE4" : "#24150D",
