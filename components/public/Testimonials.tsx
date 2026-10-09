@@ -53,19 +53,15 @@ function Quote({
   dark,
   quote,
   name,
-  delay,
   onOpen,
 }: {
   dark: boolean;
   quote: string;
   name: string;
-  delay?: string;
   onOpen: () => void;
 }) {
   return (
     <button
-      data-reveal="up"
-      data-delay={delay}
       onClick={onOpen}
       aria-label={`Read the full review from ${name}`}
       className="cursor-pointer"
@@ -279,12 +275,13 @@ export default function Testimonials() {
           </a>
         </div>
 
-        <div className="testi-rail">
+        {/* the rail reveals as one unit — per-card reveals leave off-screen cards
+            translated down, which reads as vertical overflow in the scroll container */}
+        <div className="testi-rail" data-reveal="up">
           {REVIEWS.map((r, i) => (
             <Quote
               key={r.name}
               dark={i % 2 === 0}
-              delay={i ? String(Math.min(i * 60, 240)) : undefined}
               quote={r.quote}
               name={r.name}
               onOpen={() => setOpenIdx(i)}
