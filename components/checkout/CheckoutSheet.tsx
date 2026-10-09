@@ -540,7 +540,20 @@ export default function CheckoutSheet({
             </div>
 
             <div style={{ display: payTab === "wallet" ? "block" : "none", marginTop: 12 }}>
-              <div id="google-pay-button" style={{ display: square.wallets.includes("googlePay") ? "block" : "none" }} />
+              <div
+                id="google-pay-button"
+                role="button"
+                aria-label="Pay with Google Pay"
+                onClick={() => {
+                  if (!processing) pay("googlePay"); // Square renders the button; we start the payment
+                }}
+                className="cursor-pointer"
+                style={{
+                  display: square.wallets.includes("googlePay") ? "block" : "none",
+                  width: "100%",
+                  height: 50,
+                }}
+              />
               {square.wallets.includes("applePay") && (
                 <button
                   onClick={() => pay("applePay")}

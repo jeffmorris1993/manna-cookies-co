@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 /* Minimal typings for the Square Web Payments SDK */
 type TokenResult = { status: string; token?: string; errors?: { message?: string }[] };
 interface SqPaymentMethod {
-  attach(selector: string): Promise<void>;
+  attach(selector: string, options?: Record<string, unknown>): Promise<void>;
   tokenize(): Promise<TokenResult>;
   destroy?(): Promise<void>;
 }
@@ -92,7 +92,12 @@ export function useSquarePayments(active: boolean, totalCents: number, label: st
         const found: WalletKind[] = [];
         try {
           const gp = await payments.googlePay(req);
-          await gp.attach("#google-pay-button");
+          // fill = match the container, so it sizes like the Apple Pay button
+          await gp.attach("#google-pay-button", {
+            buttonColor: "black",
+            buttonSizeMode: "fill",
+            buttonType: "long",
+          });
           walletRefs.current.googlePay = gp;
           found.push("googlePay");
         } catch (e) {
