@@ -67,8 +67,23 @@ export default function CheckoutSheet({
     }
   }, []);
 
+  // Fresh snapshot on open, then every 15s, on tab return, and the moment the
+  // owner saves a change in the dashboard (realtime event relayed by the page).
   useEffect(() => {
     refreshDrop();
+    const id = window.setInterval(() => {
+      if (document.visibilityState === "visible") refreshDrop();
+    }, 15_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refreshDrop();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("manna:drop-changed", onVisible);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("manna:drop-changed", onVisible);
+    };
   }, [refreshDrop]);
 
   const changeOrder = (nextPkg?: PackageKind, nextWindow?: string | null) => {

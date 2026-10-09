@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { notifyDropChanged } from "@/lib/notify";
 import { z } from "zod";
 import { requireOwner } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -13,9 +14,10 @@ function fail(error: string): ActionResult {
   return { ok: false, error };
 }
 
-function revalidateDashboard() {
+async function revalidateDashboard() {
   revalidatePath("/dashboard", "layout");
   revalidatePath("/", "page"); // public availability reflects dashboard changes
+  await notifyDropChanged(); // open browser tabs refresh immediately
 }
 
 /* ---------------- orders ---------------- */
@@ -58,7 +60,7 @@ export async function updateOrderStatus(orderId: string, status: string): Promis
     .eq("id", parsed.data.orderId)
     .eq("status", current.status);
   if (error) return fail("Couldn't update the order.");
-  revalidateDashboard();
+  await revalidateDashboard();
   return { ok: true };
 }
 
@@ -75,7 +77,7 @@ export async function toggleOpen(dropId: string, open: boolean): Promise<ActionR
 
   const { error } = await supabase.from("drops").update({ is_open: open }).eq("id", dropId);
   if (error) return fail("Couldn't update ordering.");
-  revalidateDashboard();
+  await revalidateDashboard();
   return { ok: true };
 }
 
@@ -208,7 +210,7 @@ export async function saveDrop(input: SaveDropInput): Promise<ActionResult> {
     if (error) return fail("Couldn't save package pricing.");
   }
 
-  revalidateDashboard();
+  await revalidateDashboard();
   return { ok: true };
 }
 
@@ -235,7 +237,7 @@ export async function makeLive(dropId: string): Promise<ActionResult> {
   }
   const { error } = await supabase.from("drops").update({ status: "live" }).eq("id", dropId);
   if (error) return fail("Couldn't make this drop live.");
-  revalidateDashboard();
+  await revalidateDashboard();
   return { ok: true };
 }
 
@@ -274,7 +276,7 @@ export async function deleteDrop(dropId: string): Promise<ActionResult> {
   // windows + packages cascade; orders restrict (backstop for the count check above)
   const { error } = await admin.from("drops").delete().eq("id", dropId);
   if (error) return fail("Couldn't delete the drop.");
-  revalidateDashboard();
+  await revalidateDashboard();
   return { ok: true };
 }
 
@@ -405,7 +407,7 @@ export async function createNextDrop(fromDropId: string | null): Promise<ActionR
     .update({ pickup_date: minDate, deadline: deadlineTimestamp(minDate, deadlineDays) })
     .eq("id", created.id);
 
-  revalidateDashboard();
+  await revalidateDashboard();
   return { ok: true, id: created.id };
 }
 
@@ -443,7 +445,7 @@ export async function uploadDropPhoto(dropId: string, formData: FormData): Promi
   const { error } = await admin.from("drops").update({ photo_url: url }).eq("id", dropId);
   if (error) return fail("Couldn't save the photo.");
 
-  revalidateDashboard();
+  await revalidateDashboard();
   return { ok: true };
 }
 
@@ -458,7 +460,7 @@ export async function removeDropPhoto(dropId: string): Promise<ActionResult> {
 
   const { error } = await supabase.from("drops").update({ photo_url: null }).eq("id", dropId);
   if (error) return fail("Couldn't remove the photo.");
-  revalidateDashboard();
+  await revalidateDashboard();
   return { ok: true };
 }
 
@@ -485,7 +487,7 @@ export async function saveOrderSettings(
     { key: "deadline_days", value: String(days.data), updated_at: now },
   ]);
   if (error) return fail("Couldn't save settings.");
-  revalidateDashboard();
+  await revalidateDashboard();
   return { ok: true };
 }
 
@@ -503,6 +505,6 @@ export async function savePickupAddress(address: string): Promise<ActionResult> 
     .from("app_settings")
     .upsert({ key: "pickup_address", value: parsed.data, updated_at: new Date().toISOString() });
   if (error) return fail("Couldn't save the address.");
-  revalidateDashboard();
+  await revalidateDashboard();
   return { ok: true };
 }

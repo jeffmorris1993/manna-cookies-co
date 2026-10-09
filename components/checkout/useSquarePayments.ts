@@ -95,15 +95,15 @@ export function useSquarePayments(active: boolean, totalCents: number, label: st
           await gp.attach("#google-pay-button");
           walletRefs.current.googlePay = gp;
           found.push("googlePay");
-        } catch {
-          /* Google Pay unavailable in this browser/env */
+        } catch (e) {
+          console.warn("google_pay_unavailable", e); // diagnostic: why the button is hidden
         }
         try {
           const ap = await payments.applePay(req);
           walletRefs.current.applePay = ap; // Apple Pay uses a styled button, no attach
           found.push("applePay");
-        } catch {
-          /* Apple Pay unavailable (always in sandbox) */
+        } catch (e) {
+          console.warn("apple_pay_unavailable", e); // expected outside Safari / without Wallet
         }
         if (!cancelled) setWallets(found);
       } catch (e) {

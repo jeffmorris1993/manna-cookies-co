@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LiveDropView, PackageKind } from "@/lib/types";
+import { supabaseBrowser } from "@/lib/supabase/browser";
 import { useReveal } from "./useReveal";
 import IntroOverlay from "./IntroOverlay";
 import AnnouncementBar from "./AnnouncementBar";
@@ -16,7 +17,7 @@ import SiteFooter from "./SiteFooter";
 import StickyOrderBar from "./StickyOrderBar";
 import CheckoutSheet from "@/components/checkout/CheckoutSheet";
 
-const POLL_MS = 30_000;
+const POLL_MS = 15_000;
 
 export default function PublicSite({ drop: initialDrop }: { drop: LiveDropView }) {
   const [drop, setDrop] = useState(initialDrop);
@@ -53,11 +54,24 @@ export default function PublicSite({ drop: initialDrop }: { drop: LiveDropView }
     };
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", onVisible);
+
+    // Event-driven: the server broadcasts after every dashboard save or order,
+    // so open tabs update within a second instead of waiting for the poll.
+    const supabase = supabaseBrowser();
+    const channel = supabase
+      .channel("drop-updates", { config: { broadcast: { self: false } } })
+      .on("broadcast", { event: "changed" }, () => {
+        window.dispatchEvent(new Event("manna:drop-changed")); // checkout sheet listens
+        refresh();
+      })
+      .subscribe();
+
     return () => {
       stopped = true;
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", onVisible);
+      supabase.removeChannel(channel);
     };
   }, []);
 

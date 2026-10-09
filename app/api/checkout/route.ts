@@ -5,6 +5,7 @@ import { squareClient, SQUARE_LOCATION_ID } from "@/lib/square";
 import { allowRequest, clientIp } from "@/lib/ratelimit";
 import { normalizePhone, displayOrderNumber, longDate, windowLabel } from "@/lib/format";
 import { sendOrderConfirmation } from "@/lib/email";
+import { notifyDropChanged } from "@/lib/notify";
 import { PACKAGE_META } from "@/lib/types";
 import { etOffset } from "@/lib/deadline";
 import { SquareError } from "square";
@@ -148,6 +149,7 @@ export async function POST(req: Request) {
 
   // Replay of an already-paid order → return the original confirmation.
   if (reserved.replayed && reserved.square_payment_id) {
+    await notifyDropChanged(); // availability changed — refresh open tabs now
     return NextResponse.json({ ok: true, orderNumber, total: reserved.price_cents });
   }
   // Replay of a canceled attempt → the client must start a fresh attempt.
@@ -359,6 +361,7 @@ export async function POST(req: Request) {
       });
     }
 
+    await notifyDropChanged(); // availability changed — refresh open tabs now
     return NextResponse.json({ ok: true, orderNumber, total: reserved.price_cents });
   } catch (err) {
     if (isDecline(err)) {
