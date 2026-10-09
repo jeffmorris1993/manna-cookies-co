@@ -223,12 +223,14 @@ export default function DropEditor({
   const firstPickup = [...wins].map((w) => w.date).sort()[0] ?? minPickupDate;
   const deadlineAt = new Date(deadlineTimestamp(firstPickup, deadlineDays));
   const deadlinePast = deadlineAt.getTime() <= Date.now();
-  const deadlineNote = `Orders close ${deadlineAt.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-    timeZone: "America/New_York",
-  })} · 8:00 PM`;
+  const closeLabel = (dateISO: string) =>
+    `${new Date(deadlineTimestamp(dateISO, deadlineDays)).toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      timeZone: "America/New_York",
+    })} · 8:00 PM`;
+  const deadlineNote = `Orders close ${closeLabel(firstPickup)}`;
 
   const onPhotoPicked = async (file: File | undefined) => {
     if (!file || photoBusy) return;
@@ -511,9 +513,11 @@ export default function DropEditor({
           <div>
             <div style={{ fontWeight: 500 }}>Ordering deadline</div>
             <div style={{ fontSize: 12, color: deadlinePast ? "#8A3B1E" : "#6E5546", marginTop: 2 }}>
-              {deadlineDays === 0 ? "Day of first pickup" : `${deadlineDays} day${deadlineDays === 1 ? "" : "s"} before first pickup`}
+              {deadlineDays === 0
+                ? "Each day closes at 8 PM that day"
+                : `Each day closes ${deadlineDays} day${deadlineDays === 1 ? "" : "s"} before, 8 PM`}
               {" · "}
-              {deadlinePast ? "already passed — move the pickup dates" : deadlineNote}
+              {deadlinePast ? "first day already passed — move the pickup dates" : `first: ${closeLabel(firstPickup)}`}
             </div>
           </div>
           <Stepper
@@ -665,6 +669,9 @@ export default function DropEditor({
                 >
                   ×
                 </button>
+              </div>
+              <div style={{ marginTop: 6, marginLeft: 2, fontSize: 11.5, color: "#8A6440" }}>
+                Orders for this day close {closeLabel(date)}
               </div>
 
               <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>

@@ -3,6 +3,7 @@ import type { LiveDropView, PackageKind } from "./types";
 import { PACKAGE_META } from "./types";
 import { availLine } from "./avail";
 import { deadlineLabel, longDate, monthDay, windowLabel } from "./format";
+import { deadlineTimestamp } from "./deadline";
 import { supabaseAdmin } from "./supabase/admin";
 
 const COUNTED_STATUSES = ["new", "preparing", "ready", "picked"] as const;
@@ -29,7 +30,7 @@ export async function getLiveDropView(): Promise<LiveDropView | null> {
 
   const { data: drop, error } = await db
     .from("drops")
-    .select("id, cookie, description, photo_url, pickup_date, deadline, capacity, is_open")
+    .select("id, cookie, description, photo_url, pickup_date, deadline, deadline_days, capacity, is_open")
     .eq("status", "live")
     .maybeSingle();
   if (error) throw new Error(`getLiveDropView drops: ${error.message}`);
@@ -73,13 +74,29 @@ export async function getLiveDropView(): Promise<LiveDropView | null> {
 
   const smallest = packages.length ? Math.min(...packages.map((p) => p.count)) : Infinity;
   const soldOut = remaining < smallest;
-  const deadline = new Date(drop.deadline);
-  const pastDeadline = Date.now() > deadline.getTime();
-  const orderable = drop.is_open && !soldOut && !pastDeadline;
 
-  // pickup can span multiple days — derive labels from the windows themselves
+  // Rolling deadlines: ordering for each pickup day closes deadline_days
+  // before THAT day (8 PM ET). The drop is past-deadline only when every
+  // day has closed; the countdown tracks the next upcoming cutoff.
   const dates = [...new Set((winRows ?? []).map((w) => w.pickup_date as string))].sort();
   const multiDay = dates.length > 1;
+  const days = drop.deadline_days as number;
+  const dayDeadline = new Map(dates.map((d) => [d, new Date(deadlineTimestamp(d, days))]));
+  const now = Date.now();
+  const openDates = dates.filter((d) => now <= dayDeadline.get(d)!.getTime());
+  const deadline = openDates.length
+    ? dayDeadline.get(openDates[0]!)!
+    : new Date(drop.deadline);
+  const pastDeadline = openDates.length === 0;
+  const orderable = drop.is_open && !soldOut && !pastDeadline;
+
+  const deadlineRule = multiDay
+    ? days === 0
+      ? "Order by 8:00 PM on your pickup day"
+      : days === 1
+        ? "Order by 8:00 PM the day before your pickup"
+        : `Order by 8:00 PM, ${days} days before your pickup day`
+    : `Order by ${deadlineLabel(deadline)}`;
   // keep the label short even for many days: "Monday, Oct 12 – Thursday, Oct 15"
   const pickupDateLabel = multiDay
     ? dates.length === 2
@@ -109,10 +126,13 @@ export async function getLiveDropView(): Promise<LiveDropView | null> {
     orderable,
     availLine: availLine(reserved, drop.capacity),
     packages,
+    deadlineRule,
     windows: (winRows ?? []).map((w) => ({
       id: w.id,
       label: windowLabel(w.starts.slice(0, 5), w.ends.slice(0, 5)),
       full: w.is_full,
+      closed: now > (dayDeadline.get(w.pickup_date as string)?.getTime() ?? 0),
+      orderByLabel: deadlineLabel(dayDeadline.get(w.pickup_date as string) ?? deadline),
       starts: w.starts.slice(0, 5),
       ends: w.ends.slice(0, 5),
       dateISO: w.pickup_date as string,

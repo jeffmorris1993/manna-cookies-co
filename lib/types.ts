@@ -42,6 +42,8 @@ export interface PublicWindow {
   id: string;
   label: string;
   full: boolean;
+  closed: boolean; // this day's ordering deadline has passed
+  orderByLabel: string; // this day's cutoff, "Sunday, Oct 11 · 8:00 PM"
   starts: string; // "09:00"
   ends: string; // "11:00"
   dateISO: string; // "2026-10-11" — windows can span multiple days
@@ -56,7 +58,8 @@ export interface LiveDropView {
   pickupDateISO: string; // "2026-10-10"
   pickupDateLabel: string; // "Saturday, Oct 10"
   pickupShort: string; // "SAT, OCT 10"
-  deadlineLabel: string; // "Thursday, Oct 8 · 8:00 PM"
+  deadlineLabel: string; // next upcoming cutoff, "Thursday, Oct 8 · 8:00 PM"
+  deadlineRule: string; // customer-facing rule line, e.g. "Order by 8:00 PM, 2 days before your pickup day"
   deadlineAt: string; // ISO timestamp, for countdown logic
   capacity: number;
   reserved: number;

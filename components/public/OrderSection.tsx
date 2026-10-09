@@ -250,7 +250,7 @@ export default function OrderSection({
                   })}
                   <div style={{ marginTop: 10, fontSize: 13, lineHeight: 1.7, color: "#5A4334" }}>
                     <span style={{ whiteSpace: "nowrap" }}>Pickup only · {drop.pickupDateLabel}</span> ·{" "}
-                    <span style={{ whiteSpace: "nowrap" }}>Order by {drop.deadlineLabel}</span>
+                    <span style={{ whiteSpace: "nowrap" }}>{drop.deadlineRule}</span>
                   </div>
                 </div>
               )}
@@ -382,7 +382,7 @@ export default function OrderSection({
             </div>
             <div style={{ marginTop: 32, fontSize: 14, lineHeight: 1.7, color: "#5A4334" }}>
               <span style={{ whiteSpace: "nowrap" }}>Pickup only · {drop.pickupDateLabel}</span> ·{" "}
-              <span style={{ whiteSpace: "nowrap" }}>Order by {drop.deadlineLabel}</span>
+              <span style={{ whiteSpace: "nowrap" }}>{drop.deadlineRule}</span>
             </div>
           </>
         )}

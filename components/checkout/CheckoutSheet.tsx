@@ -67,7 +67,7 @@ export default function CheckoutSheet({
     dayPick && dayISOs.includes(dayPick)
       ? dayPick
       : (selectedWindow?.dateISO ??
-        dayISOs.find((d) => drop.windows.some((w) => w.dateISO === d && !w.full)) ??
+        dayISOs.find((d) => drop.windows.some((w) => w.dateISO === d && !w.full && !w.closed)) ??
         dayISOs[0]);
 
   const refreshDrop = useCallback(async () => {
@@ -408,7 +408,7 @@ export default function CheckoutSheet({
                     const on = iso === activeDay;
                     const dayFull = drop.windows
                       .filter((w) => w.dateISO === iso)
-                      .every((w) => w.full);
+                      .every((w) => w.full || w.closed);
                     return (
                       <button
                         key={iso}
@@ -451,9 +451,9 @@ export default function CheckoutSheet({
                   return (
                     <button
                       key={w.id}
-                      disabled={w.full}
+                      disabled={w.full || w.closed}
                       onClick={() => changeOrder(undefined, w.id)}
-                      className={w.full ? "cursor-not-allowed" : "cursor-pointer"}
+                      className={w.full || w.closed ? "cursor-not-allowed" : "cursor-pointer"}
                       style={{
                         minHeight: 62,
                         border: `1px solid ${on ? "#24150D" : "rgba(74,38,22,.25)"}`,
@@ -465,17 +465,29 @@ export default function CheckoutSheet({
                         alignItems: "center",
                         justifyContent: "center",
                         gap: 2,
-                        opacity: w.full ? 0.45 : 1,
+                        opacity: w.full || w.closed ? 0.45 : 1,
                       }}
                     >
                       <span>{w.label}</span>
                       <span style={{ fontSize: 9, letterSpacing: ".2em" }}>
-                        {w.full ? "FULL" : on ? "SELECTED" : ""}
+                        {w.closed ? "ORDERING CLOSED" : w.full ? "FULL" : on ? "SELECTED" : ""}
                       </span>
                     </button>
                   );
                 })}
             </div>
+            {multiDay &&
+              (() => {
+                const dayWin = drop.windows.find((w) => w.dateISO === activeDay);
+                if (!dayWin) return null;
+                return (
+                  <div style={{ marginTop: 10, fontSize: 12.5, color: "#8A6440" }}>
+                    {dayWin.closed
+                      ? "Ordering for this day has closed."
+                      : `Order for this day by ${dayWin.orderByLabel}`}
+                  </div>
+                );
+              })()}
           </div>
         )}
 

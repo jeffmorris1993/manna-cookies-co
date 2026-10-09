@@ -7,7 +7,7 @@ import { normalizePhone, displayOrderNumber, longDate, windowLabel } from "@/lib
 import { sendOrderConfirmation } from "@/lib/email";
 import { notifyDropChanged } from "@/lib/notify";
 import { PACKAGE_META } from "@/lib/types";
-import { etOffset } from "@/lib/deadline";
+import { etOffset, deadlineTimestamp } from "@/lib/deadline";
 import { SquareError } from "square";
 
 type ReserveResult = {
@@ -124,6 +124,23 @@ export async function POST(req: Request) {
   }
 
   const db = supabaseAdmin();
+
+  // 0. Rolling deadline: ordering for a pickup DAY closes deadline_days before
+  // that day — the drop-level deadline (checked in reserve_order) only covers
+  // the final day, so earlier days need this per-day gate.
+  const [{ data: winDay }, { data: dropDays }] = await Promise.all([
+    db.from("pickup_windows").select("pickup_date").eq("id", input.windowId).maybeSingle(),
+    db.from("drops").select("deadline_days").eq("id", input.dropId).maybeSingle(),
+  ]);
+  if (!winDay || !dropDays) {
+    return NextResponse.json({ error: "That pickup window is no longer available.", code: "WINDOW_FULL" }, { status: 409 });
+  }
+  if (Date.now() > new Date(deadlineTimestamp(winDay.pickup_date, dropDays.deadline_days)).getTime()) {
+    return NextResponse.json(
+      { error: "Ordering for that pickup day has closed. Choose a later day.", code: "WINDOW_FULL" },
+      { status: 409 },
+    );
+  }
 
   // 1. Reserve capacity atomically (idempotent on idempotencyKey).
   const { data: reserveData, error: reserveErr } = await db.rpc("reserve_order", {

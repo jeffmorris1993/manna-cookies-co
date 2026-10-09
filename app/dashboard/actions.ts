@@ -6,6 +6,7 @@ import { z } from "zod";
 import { requireOwner } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { deadlineTimestamp } from "@/lib/deadline";
+import { longDate } from "@/lib/format";
 import { PACKAGE_KINDS, PACKAGE_META } from "@/lib/types";
 
 export type ActionResult = { ok: boolean; error?: string; id?: string };
@@ -139,14 +140,20 @@ export async function saveDrop(input: SaveDropInput): Promise<ActionResult> {
     if (w.ends <= w.starts) return fail("Each pickup window must end after it starts.");
   }
 
-  // pickup can span several days; the drop's date is the earliest window day
-  const pickupDate = [...d.windows].map((w) => w.date).sort()[0]!;
-  const deadlineIso = deadlineTimestamp(pickupDate, d.deadlineDays);
-  if (target.status !== "complete" && new Date(deadlineIso).getTime() <= Date.now()) {
-    return fail(
-      `With a ${d.deadlineDays}-day deadline, the first pickup day must be later — ordering would already be closed.`,
-    );
+  // pickup can span several days; each day closes to orders deadline_days
+  // before that day, and the drop's stored deadline is the FINAL day's cutoff
+  const dates = [...new Set(d.windows.map((w) => w.date))].sort();
+  const pickupDate = dates[0]!;
+  if (target.status !== "complete") {
+    for (const date of dates) {
+      if (new Date(deadlineTimestamp(date, d.deadlineDays)).getTime() <= Date.now()) {
+        return fail(
+          `With a ${d.deadlineDays}-day deadline, ordering for ${longDate(date)} would already be closed — pick a later day.`,
+        );
+      }
+    }
   }
+  const deadlineIso = deadlineTimestamp(dates[dates.length - 1]!, d.deadlineDays);
 
   // capacity can't drop below what's already reserved
   const { data: reservedRows } = await supabase
@@ -400,11 +407,14 @@ export async function createNextDrop(fromDropId: string | null): Promise<ActionR
     sort: w.sort,
   }));
   await supabase.from("pickup_windows").insert(winRows);
-  // keep the drop's date aligned with its earliest window
-  const minDate = winRows.map((w) => w.pickup_date).sort()[0]!;
+  // drop date = earliest window day; stored deadline = final day's cutoff
+  const sortedDates = winRows.map((w) => w.pickup_date).sort();
   await supabase
     .from("drops")
-    .update({ pickup_date: minDate, deadline: deadlineTimestamp(minDate, deadlineDays) })
+    .update({
+      pickup_date: sortedDates[0]!,
+      deadline: deadlineTimestamp(sortedDates[sortedDates.length - 1]!, deadlineDays),
+    })
     .eq("id", created.id);
 
   await revalidateDashboard();
