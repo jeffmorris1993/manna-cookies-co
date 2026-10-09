@@ -80,8 +80,11 @@ export async function getLiveDropView(): Promise<LiveDropView | null> {
   // pickup can span multiple days — derive labels from the windows themselves
   const dates = [...new Set((winRows ?? []).map((w) => w.pickup_date as string))].sort();
   const multiDay = dates.length > 1;
+  // keep the label short even for many days: "Monday, Oct 12 – Thursday, Oct 15"
   const pickupDateLabel = multiDay
-    ? dates.map((d) => longDate(d)).join(dates.length === 2 ? " & " : " · ")
+    ? dates.length === 2
+      ? `${longDate(dates[0]!)} & ${longDate(dates[1]!)}`
+      : `${longDate(dates[0]!)} – ${longDate(dates[dates.length - 1]!)}`
     : longDate(dates[0] ?? drop.pickup_date);
   const pickupShort = multiDay
     ? `PICKUP ${monthDay(dates[0]).toUpperCase()} – ${monthDay(dates[dates.length - 1]).toUpperCase()}`

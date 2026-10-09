@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { LiveDropView, PackageKind } from "@/lib/types";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, parseISODate } from "@/lib/format";
 import { useSquarePayments, type WalletKind } from "./useSquarePayments";
 
 type Confirmation = { orderNumber: string; total: number };
@@ -55,6 +55,20 @@ export default function CheckoutSheet({
     () => drop.windows.find((w) => w.id === windowId) ?? null,
     [drop.windows, windowId],
   );
+
+  // multi-day pickup: one day shown at a time, picked via chips
+  const [dayPick, setDayPick] = useState<string | null>(null);
+  const dayISOs = useMemo(
+    () => [...new Set(drop.windows.map((w) => w.dateISO))].sort(),
+    [drop.windows],
+  );
+  const multiDay = dayISOs.length > 1;
+  const activeDay =
+    dayPick && dayISOs.includes(dayPick)
+      ? dayPick
+      : (selectedWindow?.dateISO ??
+        dayISOs.find((d) => drop.windows.some((w) => w.dateISO === d && !w.full)) ??
+        dayISOs[0]);
 
   const refreshDrop = useCallback(async () => {
     try {
@@ -382,62 +396,86 @@ export default function CheckoutSheet({
                 {drop.pickupDateLabel}
               </span>
               <span style={{ fontSize: 10, letterSpacing: ".2em", color: "#8A6440" }}>
-                THIS WEEK&apos;S BAKE
+                {multiDay ? `${dayISOs.length} PICKUP DAYS` : "THIS WEEK'S BAKE"}
               </span>
             </div>
+            {multiDay && (
+              <>
+                <div style={{ marginTop: 20, ...LABEL }}>PICKUP DAY</div>
+                <div style={{ marginTop: 8, display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+                  {dayISOs.map((iso) => {
+                    const d = parseISODate(iso);
+                    const on = iso === activeDay;
+                    const dayFull = drop.windows
+                      .filter((w) => w.dateISO === iso)
+                      .every((w) => w.full);
+                    return (
+                      <button
+                        key={iso}
+                        onClick={() => setDayPick(iso)}
+                        className="cursor-pointer"
+                        style={{
+                          flex: "0 0 auto",
+                          minWidth: 86,
+                          padding: "8px 14px",
+                          borderRadius: 12,
+                          border: `1px solid ${on ? "#24150D" : "rgba(74,38,22,.25)"}`,
+                          background: on ? "#24150D" : "#FFFFFF",
+                          color: on ? "#F5EFE4" : "#24150D",
+                          opacity: dayFull ? 0.45 : 1,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: 2,
+                        }}
+                      >
+                        <span style={{ fontSize: 9, letterSpacing: ".2em", color: on ? "#C9A57E" : "#8A6440" }}>
+                          {d.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase()}
+                        </span>
+                        <span style={{ fontSize: 15 }}>
+                          {d.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
             <div style={{ marginTop: 20, ...LABEL }}>AVAILABLE PICKUP WINDOW</div>
-            {[...new Set(drop.windows.map((w) => w.dateISO))].map((dateISO) => {
-              const group = drop.windows.filter((w) => w.dateISO === dateISO);
-              const multiDay = new Set(drop.windows.map((w) => w.dateISO)).size > 1;
-              return (
-                <div key={dateISO}>
-                  {multiDay && (
-                    <div
+            <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {drop.windows
+                .filter((w) => !multiDay || w.dateISO === activeDay)
+                .map((w) => {
+                  const on = w.id === windowId;
+                  return (
+                    <button
+                      key={w.id}
+                      disabled={w.full}
+                      onClick={() => changeOrder(undefined, w.id)}
+                      className={w.full ? "cursor-not-allowed" : "cursor-pointer"}
                       style={{
-                        margin: "14px 0 0",
-                        fontSize: 10,
-                        letterSpacing: ".2em",
-                        fontWeight: 600,
-                        color: "#8A6440",
+                        minHeight: 62,
+                        border: `1px solid ${on ? "#24150D" : "rgba(74,38,22,.25)"}`,
+                        background: on ? "#24150D" : "#FFFFFF",
+                        color: on ? "#F5EFE4" : "#24150D",
+                        fontSize: 14,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 2,
+                        opacity: w.full ? 0.45 : 1,
                       }}
                     >
-                      {group[0]!.dateLabel.toUpperCase()}
-                    </div>
-                  )}
-                  <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                    {group.map((w) => {
-                      const on = w.id === windowId;
-                      return (
-                        <button
-                          key={w.id}
-                          disabled={w.full}
-                          onClick={() => changeOrder(undefined, w.id)}
-                          className={w.full ? "cursor-not-allowed" : "cursor-pointer"}
-                          style={{
-                            minHeight: 62,
-                            border: `1px solid ${on ? "#24150D" : "rgba(74,38,22,.25)"}`,
-                            background: on ? "#24150D" : "#FFFFFF",
-                            color: on ? "#F5EFE4" : "#24150D",
-                            fontSize: 14,
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: 2,
-                            opacity: w.full ? 0.45 : 1,
-                          }}
-                        >
-                          <span>{w.label}</span>
-                          <span style={{ fontSize: 9, letterSpacing: ".2em" }}>
-                            {w.full ? "FULL" : on ? "SELECTED" : ""}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
+                      <span>{w.label}</span>
+                      <span style={{ fontSize: 9, letterSpacing: ".2em" }}>
+                        {w.full ? "FULL" : on ? "SELECTED" : ""}
+                      </span>
+                    </button>
+                  );
+                })}
+            </div>
           </div>
         )}
 

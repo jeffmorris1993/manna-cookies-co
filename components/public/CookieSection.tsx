@@ -126,8 +126,8 @@ export default function CookieSection() {
               >
                 <Image
                   data-reveal="scale"
-                  src="/cookie-stack.jpg"
-                  alt="A stack of brown butter chocolate chunk cookies"
+                  src="/cookie-rack.jpg"
+                  alt="Fresh sea-salted chocolate chunk cookies cooling on a wire rack"
                   width={520}
                   height={650}
                   style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
