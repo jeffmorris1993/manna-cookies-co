@@ -31,12 +31,12 @@ export default async function DropEditPage({ params }: { params: Promise<{ id: s
       .order("starts"),
     supabase
       .from("orders")
-      .select("cookie_count, price_cents, paid, status")
+      .select("cookie_count, price_cents, paid, status, counts_capacity")
       .eq("drop_id", id)
       .in("status", ["new", "preparing", "ready", "picked"]),
   ]);
 
-  const reserved = (orderRows ?? []).reduce((s, o) => s + o.cookie_count, 0);
+  const reserved = (orderRows ?? []).reduce((s, o) => s + (o.counts_capacity ? o.cookie_count : 0), 0);
   const revenue = (orderRows ?? []).filter((o) => o.paid).reduce((s, o) => s + o.price_cents, 0);
 
   const kindOrder: PackageKind[] = ["three", "half", "dozen"];

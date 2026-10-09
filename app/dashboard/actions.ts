@@ -160,6 +160,7 @@ export async function saveDrop(input: SaveDropInput): Promise<ActionResult> {
     .from("orders")
     .select("cookie_count, status")
     .eq("drop_id", d.dropId)
+    .eq("counts_capacity", true)
     .in("status", ["pending", "new", "preparing", "ready", "picked"]);
   const reserved = (reservedRows ?? []).reduce((s, r) => s + r.cookie_count, 0);
   if (d.capacity < reserved) {

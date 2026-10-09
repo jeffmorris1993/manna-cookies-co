@@ -6,7 +6,6 @@ import { supabaseBrowser } from "@/lib/supabase/browser";
 import { useReveal } from "./useReveal";
 import IntroOverlay from "./IntroOverlay";
 import AnnouncementBar from "./AnnouncementBar";
-import BetaBar from "./BetaBar";
 import Hero from "./Hero";
 import CookieSection from "./CookieSection";
 import MannaStory from "./MannaStory";
@@ -89,7 +88,6 @@ export default function PublicSite({ drop: initialDrop }: { drop: LiveDropView }
   return (
     <div style={{ fontFamily: "var(--font-jost), Jost, sans-serif", color: "#24150D", animation: "mannaFade .6s ease" }}>
       <IntroOverlay />
-      <BetaBar />
       <AnnouncementBar drop={drop} />
       <main>
         <Hero onOrder={goOrder} />

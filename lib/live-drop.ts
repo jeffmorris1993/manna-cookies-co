@@ -17,6 +17,7 @@ export async function reservedCount(dropId: string): Promise<number> {
     .from("orders")
     .select("cookie_count, status, created_at")
     .eq("drop_id", dropId)
+    .eq("counts_capacity", true)
     .or(
       `status.in.(${COUNTED_STATUSES.join(",")}),and(status.eq.pending,created_at.gt.${freshCutoff})`,
     );
@@ -117,6 +118,7 @@ export async function getLiveDropView(): Promise<LiveDropView | null> {
     pickupShort,
     deadlineLabel: deadlineLabel(deadline),
     deadlineAt: deadline.toISOString(),
+    nextPickupShort: multiDay && openDates.length ? monthDay(openDates[0]!).toUpperCase() : null,
     capacity: drop.capacity,
     reserved,
     remaining,

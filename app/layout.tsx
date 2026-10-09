@@ -16,13 +16,20 @@ const jost = Jost({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.mannacookiesmi.com"),
   title: "Manna Cookies & Co. · Straight From Heaven",
   description:
     "One really good cookie, baked fresh each week. Small batch, pickup only. Order this week's Manna.",
   openGraph: {
     title: "Manna Cookies & Co.",
     description: "One really good cookie, baked fresh each week.",
-    images: ["/cookie-stack.jpg"],
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Manna Cookies & Co." }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Manna Cookies & Co.",
+    description: "One really good cookie, baked fresh each week.",
+    images: ["/og.png"],
   },
 };
 

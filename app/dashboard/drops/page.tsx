@@ -35,14 +35,14 @@ export default async function DropsPage() {
       .order("pickup_date", { ascending: false }),
     supabase
       .from("orders")
-      .select("drop_id, cookie_count, price_cents, paid, status")
+      .select("drop_id, cookie_count, price_cents, paid, status, counts_capacity")
       .in("status", ["new", "preparing", "ready", "picked"]),
   ]);
 
   const agg = new Map<string, { sold: number; revenue: number }>();
   for (const o of orderAgg ?? []) {
     const a = agg.get(o.drop_id) ?? { sold: 0, revenue: 0 };
-    a.sold += o.cookie_count;
+    if (o.counts_capacity) a.sold += o.cookie_count;
     if (o.paid) a.revenue += o.price_cents;
     agg.set(o.drop_id, a);
   }

@@ -27,10 +27,14 @@ export default function AnnouncementBar({ drop }: { drop: LiveDropView }) {
 
   const full = nearSellout
     ? `ALMOST GONE · ONLY ${drop.remaining} COOKIES LEFT THIS WEEK`
-    : `LAST CALL · ORDERING CLOSES ${drop.deadlineLabel.toUpperCase()}`;
+    : drop.nextPickupShort
+      ? `LAST CALL · ${drop.nextPickupShort} PICKUP CLOSES ${shortDeadline.toUpperCase()}`
+      : `LAST CALL · ORDERING CLOSES ${drop.deadlineLabel.toUpperCase()}`;
   const short = nearSellout
     ? `ONLY ${drop.remaining} COOKIES LEFT`
-    : `LAST CALL · CLOSES ${shortDeadline.toUpperCase()}`;
+    : drop.nextPickupShort
+      ? `${drop.nextPickupShort} PICKUP CLOSES ${shortDeadline.toUpperCase()}`
+      : `LAST CALL · CLOSES ${shortDeadline.toUpperCase()}`;
 
   return (
     <div

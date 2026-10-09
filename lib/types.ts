@@ -60,7 +60,8 @@ export interface LiveDropView {
   pickupShort: string; // "SAT, OCT 10"
   deadlineLabel: string; // next upcoming cutoff, "Thursday, Oct 8 · 8:00 PM"
   deadlineRule: string; // customer-facing rule line, e.g. "Order by 8:00 PM, 2 days before your pickup day"
-  deadlineAt: string; // ISO timestamp, for countdown logic
+  deadlineAt: string; // ISO timestamp of the next cutoff, for countdown logic
+  nextPickupShort: string | null; // multi-day only: the day that cutoff is for, "OCT 12"
   capacity: number;
   reserved: number;
   remaining: number;
